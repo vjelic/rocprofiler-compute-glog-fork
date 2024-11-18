@@ -22,7 +22,7 @@
 # SOFTWARE.
 ##############################################################################el
 
-from omniperf_analyze.analysis_base import OmniAnalyze_Base
+from rocprof_compute_analyze.analysis_base import OmniAnalyze_Base
 from utils.utils import demarcate, console_debug, console_error
 from utils import file_io, parser
 from utils.gui import build_bar_chart, build_table_chart
@@ -37,10 +37,15 @@ from dash import dcc
 from dash.dependencies import Input, Output, State
 
 
+PROJECT_NAME = "rocprofiler-compute"
+
+
 class webui_analysis(OmniAnalyze_Base):
     def __init__(self, args, supported_archs):
         super().__init__(args, supported_archs)
-        self.app = dash.Dash(__name__, external_stylesheets=[dbc.themes.CYBORG])
+        self.app = dash.Dash(
+            __name__, title=PROJECT_NAME, external_stylesheets=[dbc.themes.CYBORG]
+        )
         self.dest_dir = os.path.abspath(args.path[0][0])
         self.arch = None
 
