@@ -37,7 +37,7 @@ from pathlib import Path as path
 import pandas as pd
 
 import config
-from utils.tty import get_table_string
+
 from utils.utils import (
     console_error,
     console_log,
@@ -558,6 +558,7 @@ class MachineSpecs:
     def __repr__(self):
         topstr = "Machine Specifications: describing the state of the machine that ROCm Compute Profiler data was collected on.\n"
         data = []
+        from utils.tty import get_table_string
         for field in fields(self):
             name = field.name
             if not name.startswith("_"):

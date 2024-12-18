@@ -130,10 +130,9 @@ def verify_deps():
 
 
 def main():
-    '''Main function for rocprofiler-compute'''
+    """Main function for rocprofiler-compute"""
 
-    # verify required python dependencies
-    verify_deps()
+    from rocprof_compute_base import RocProfCompute
 
     rocprof_compute = RocProfCompute()
 
@@ -143,8 +142,11 @@ def main():
     if mode == "profile":
         rocprof_compute.run_profiler()
     elif mode == "database":
+        # verify_deps()
         rocprof_compute.update_db()
     elif mode == "analyze":
+        # verify required python dependencies
+        verify_deps()
         rocprof_compute.run_analysis()
     else:
         console_error("Unsupported execution mode")
