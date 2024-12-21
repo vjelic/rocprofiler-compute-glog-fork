@@ -27,8 +27,8 @@ import time
 from abc import ABC, abstractmethod
 
 import numpy as np
-import plotly.graph_objects as go
-from dash import dcc, html
+#import plotly.graph_objects as go
+#from dash import dcc, html
 
 from utils.roofline_calc import calc_ai, constuct_roof
 from utils.utils import (
@@ -61,7 +61,7 @@ class Roofline:
         )
         self.__ai_data = None
         self.__ceiling_data = None
-        self.__figure = go.Figure()
+        #self.__figure = go.Figure()
         # Set roofline run parameters from args
         if hasattr(self.__args, "path") and not run_parameters:
             self.__run_parameters["workload_dir"] = self.__args.path
@@ -116,7 +116,7 @@ class Roofline:
         for i in self.__ai_data:
             msg += "\n\t%s -> %s" % (i, self.__ai_data[i])
         console_debug(msg)
-
+        '''
         # Generate a roofline figure for each data type
         fp32_fig = self.generate_plot(dtype="FP32")
         ml_combo_fig_fp32_fp64 = self.generate_plot(
@@ -129,6 +129,7 @@ class Roofline:
             fig=fp16_fig,
         )
         # Create a legend and distinct kernel markers. This can be saved, optionally
+        
         self.__figure = go.Figure(
             go.Scatter(
                 mode="markers",
@@ -148,6 +149,7 @@ class Roofline:
             width=1000,
         )
         self.__figure.update_xaxes(dtick=1)
+        
         # Output will be different depending on interaction type:
         # Save PDFs if we're in "standalone roofline" mode, otherwise return HTML to be used in GUI output
         if self.__run_parameters["is_standalone"]:
@@ -210,7 +212,8 @@ class Roofline:
                     )
                 ],
             )
-
+       '''
+    '''
     @demarcate
     def generate_plot(self, dtype, fig=None) -> go.Figure():
         """Create graph object from ai_data (coordinate points) and ceiling_data (peak FLOP and BW) data."""
@@ -357,6 +360,7 @@ class Roofline:
         fig.update_yaxes(type="log", autorange=True)
 
         return fig
+        '''
 
     @demarcate
     def standalone_roofline(self):
