@@ -36,7 +36,8 @@ import pandas as pd
 
 import config
 from argparser import omniarg_parser
-from utils import file_io
+
+# from utils import file_io
 from utils.logger import (
     setup_console_handler,
     setup_file_handler,
@@ -331,6 +332,21 @@ class RocProfCompute:
         # -----------------------
         analyzer.sanitize()
 
+        # Hackcode
+        def find_1st_sub_dir(directory):
+            """
+            Find the first sub dir in a directory
+            """
+            dir_path = Path(directory)
+            try:
+                # Iterate over entries in the directory
+                for entry in dir_path.iterdir():
+                    if entry.is_dir():  # Check if it's a directory
+                        return entry
+            except FileNotFoundError:
+                print(f"The directory '{directory}' does not exist.")
+            return None
+
         # Load required SoC(s) from input
         for d in analyzer.get_args().path:
             # FIXME
@@ -338,9 +354,12 @@ class RocProfCompute:
             sysinfo_path = (
                 Path(d[0])
                 if analyzer.get_args().nodes is None
-                else file_io.find_1st_sub_dir(d[0])
+                else find_1st_sub_dir(d[0])
             )
-            sys_info = file_io.load_sys_info(sysinfo_path.joinpath("sysinfo.csv"))
+            
+            # Hackcode
+            # sys_info = file_io.load_sys_info(sysinfo_path.joinpath("sysinfo.csv"))
+            sys_info = pd.read_csv(sysinfo_path.joinpath("sysinfo.csv"))
 
             sys_info = sys_info.to_dict("list")
             sys_info = {key: value[0] for key, value in sys_info.items()}
