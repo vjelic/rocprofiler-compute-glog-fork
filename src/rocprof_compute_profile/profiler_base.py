@@ -31,6 +31,7 @@ import time
 from abc import ABC, abstractmethod
 
 import pandas as pd
+
 # from tqdm import tqdm
 
 import config
@@ -308,15 +309,15 @@ class RocProfCompute_Base:
         )
 
         # show status bar in error-only mode
-        #disable_tqdm = True
-        #if self.__args.loglevel >= logging.ERROR:
+        # disable_tqdm = True
+        # if self.__args.loglevel >= logging.ERROR:
         #    disable_tqdm = False
 
         # Run profiling on each input file
         input_files = glob.glob(self.get_args().path + "/perfmon/*.txt")
         input_files.sort()
 
-        #for fname in tqdm(input_files, disable=disable_tqdm):
+        # for fname in tqdm(input_files, disable=disable_tqdm):
         for fname in input_files:
             # Kernel filtering (in-place replacement)
             if not self.__args.kernel == None:

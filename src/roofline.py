@@ -27,8 +27,9 @@ import time
 from abc import ABC, abstractmethod
 
 import numpy as np
-#import plotly.graph_objects as go
-#from dash import dcc, html
+
+# import plotly.graph_objects as go
+# from dash import dcc, html
 
 from utils.roofline_calc import calc_ai, constuct_roof
 from utils.utils import (
@@ -61,7 +62,7 @@ class Roofline:
         )
         self.__ai_data = None
         self.__ceiling_data = None
-        #self.__figure = go.Figure()
+        # self.__figure = go.Figure()
         # Set roofline run parameters from args
         if hasattr(self.__args, "path") and not run_parameters:
             self.__run_parameters["workload_dir"] = self.__args.path
@@ -116,7 +117,7 @@ class Roofline:
         for i in self.__ai_data:
             msg += "\n\t%s -> %s" % (i, self.__ai_data[i])
         console_debug(msg)
-        '''
+        """
         # Generate a roofline figure for each data type
         fp32_fig = self.generate_plot(dtype="FP32")
         ml_combo_fig_fp32_fp64 = self.generate_plot(
@@ -212,7 +213,8 @@ class Roofline:
                     )
                 ],
             )
-       '''
+       """
+
     '''
     @demarcate
     def generate_plot(self, dtype, fig=None) -> go.Figure():
