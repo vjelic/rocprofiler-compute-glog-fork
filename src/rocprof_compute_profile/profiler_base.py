@@ -63,7 +63,7 @@ class RocProfCompute_Base:
     def get_args(self):
         return self.__args
 
-    def get_profiler_options(self, fname, soc):
+    def get_profiler_options(self, fname):
         """Fetch any version specific arguments required by profiler"""
         # assume no SoC specific options and return empty list by default
         return []
@@ -361,7 +361,9 @@ class RocProfCompute_Base:
                     console_debug(output)
             console_log("profiling", "Current input file: %s" % fname)
 
-            options = self.get_profiler_options(fname, self._soc)
+            # Fetch any SoC/profiler specific profiling options
+            options = self._soc.get_profiler_options()
+            options += self.get_profiler_options(fname)
             if (
                 self.__profiler == "rocprofv1"
                 or self.__profiler == "rocprofv2"

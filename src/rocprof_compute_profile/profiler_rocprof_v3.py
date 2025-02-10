@@ -40,7 +40,7 @@ class rocprof_v3_profiler(RocProfCompute_Base):
             or not self.get_args().roof_only
         )
 
-    def get_profiler_options(self, fname, soc):
+    def get_profiler_options(self, fname):
         app_cmd = shlex.split(self.get_args().remaining)
         trace_option = "--kernel-trace"
         rocprof_out_format = "json"
