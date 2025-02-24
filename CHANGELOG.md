@@ -8,7 +8,6 @@ Full documentation for ROCm Compute Profiler is available at [https://rocm.docs.
 
 * Roofline support for Ubuntu 24.04
 * Experimental support rocprofv3 (not enabled as default)
-* Experimental feature: Spatial multiplexing
 
 ### Resolved issues
 
