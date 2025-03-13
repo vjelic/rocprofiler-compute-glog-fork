@@ -2,6 +2,24 @@
 
 Full documentation for ROCm Compute Profiler is available at [https://rocm.docs.amd.com/projects/rocprofiler-compute/en/latest/](https://rocm.docs.amd.com/projects/rocprofiler-compute/en/latest/).
 
+## ROCm Compute Profiler 3.1.0 for ROCm 6.4.0
+
+### Added
+
+* Roofline support for Ubuntu 24.04
+* Experimental support rocprofv3 (not enabled as default)
+
+### Resolved issues
+
+* Fixed PoP of VALU Active Threads
+* Workaround broken mclk for old version of rocm-smi
+
+## ROCm Compute Profiler 3.0.0 for ROCm 6.3.0
+
+### Changed
+
+* Renamed Omniperf to ROCm Compute Profiler (#475)
+
 ## Omniperf 2.0.1 for ROCm 6.2.1
 
 ### Changed
