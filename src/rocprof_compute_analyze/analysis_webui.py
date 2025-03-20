@@ -342,9 +342,7 @@ class webui_analysis(OmniAnalyze_Base):
             self._arch_configs[self.arch],
         )
         if args.random_port:
-            self.app.run(
-                debug=False, host="0.0.0.0", port=random.randint(1024, 49151)
-            )
+            self.app.run(debug=False, host="0.0.0.0", port=random.randint(1024, 49151))
         else:
             self.app.run(debug=False, host="0.0.0.0", port=args.gui)
 
