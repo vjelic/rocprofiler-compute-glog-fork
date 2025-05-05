@@ -27,7 +27,7 @@ from pathlib import Path
 import config
 from rocprof_compute_soc.soc_base import OmniSoC_Base
 from roofline import Roofline
-from utils.logger import console_log, demarcate, console_warning
+from utils.logger import console_log, console_warning, demarcate
 from utils.utils import mibench
 
 
