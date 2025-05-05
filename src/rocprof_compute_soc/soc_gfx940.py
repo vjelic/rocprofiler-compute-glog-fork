@@ -87,7 +87,9 @@ class gfx940_soc(OmniSoC_Base):
         if not self.get_args().no_roof:
             pmc_path = str(Path(self.get_args().path).joinpath("pmc_perf.csv"))
             if not Path(pmc_path).is_file():
-                console_warning("Incomplete or missing profiling data. Skipping roofline.")
+                console_warning(
+                    "Incomplete or missing profiling data. Skipping roofline."
+                )
                 return
             console_log(
                 "roofline", "Checking for roofline.csv in " + str(self.get_args().path)
