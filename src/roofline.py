@@ -31,8 +31,10 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
+import yaml
 from dash import dcc, html
 
+from config import rocprof_compute_home
 from utils.logger import console_debug, console_error, console_log, demarcate
 from utils.roofline_calc import (
     MFMA_DATATYPES,
@@ -64,6 +66,7 @@ class Roofline:
         )
         self.__ai_data = None
         self.__ceiling_data = None
+        self.__roofline_calc = None
         self.__figure = go.Figure()
         # Set roofline run parameters from args
         if hasattr(self.__args, "path") and not run_parameters:
@@ -100,6 +103,23 @@ class Roofline:
         if not Path(self.__run_parameters["workload_dir"]).is_dir():
             os.makedirs(self.__run_parameters["workload_dir"])
 
+        # Load roofline equations from yaml
+        console_debug("roofline", "Loading roofline equations from YAML file")
+        try:
+            roof_yaml = Path(str(rocprof_compute_home)).joinpath(
+                "utils/roofline_calc.yaml"
+            )
+            with open(roof_yaml, "r") as file:
+                self.__roofline_calc = yaml.safe_load(file)
+        except FileNotFoundError:
+            console_error(f"Error: The file '{roof_yaml}' was not found.")
+        except yaml.YAMLError as exc:
+            console_error(f"Error parsing YAML file '{roof_yaml}': {exc}")
+        except Exception as e:
+            console_error(
+                f"An unexpected error occurred while loading YAML file '{roof_yaml}': {e}"
+            )
+
     @demarcate
     def empirical_roofline(
         self,
@@ -114,7 +134,9 @@ class Roofline:
 
         # Create arithmetic intensity data that will populate the roofline model
         console_debug("roofline", "Path: %s" % self.__run_parameters["workload_dir"])
-        self.__ai_data = calc_ai(self.__mspec, self.__run_parameters["sort_type"], ret_df)
+        self.__ai_data = calc_ai(
+            self.__mspec, self.__run_parameters["sort_type"], self.__roofline_calc, ret_df
+        )
 
         msg = "AI at each mem level:"
         for i in self.__ai_data:

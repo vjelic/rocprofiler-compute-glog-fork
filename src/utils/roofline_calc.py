@@ -252,7 +252,7 @@ def calc_ceilings(roofline_parameters, dtype, benchmark_data):
 #                              Overlay application performance
 # -------------------------------------------------------------------------------------
 # Calculate relevant metrics for ai calculation
-def calc_ai(mspec, sort_type, ret_df):
+def calc_ai(mspec, sort_type, roof_eq, ret_df):
     """Given counter data, calculate arithmetic intensity for each kernel in the application."""
     df = ret_df["pmc_perf"]
     # Sort by top kernels or top dispatches?
@@ -285,43 +285,8 @@ def calc_ai(mspec, sort_type, ret_df):
 
         kernelName = df["Kernel_Name"][idx]
         try:
-            total_flops += (
-                (
-                    64
-                    * (
-                        df["SQ_INSTS_VALU_ADD_F16"][idx]
-                        + df["SQ_INSTS_VALU_MUL_F16"][idx]
-                        + (2 * df["SQ_INSTS_VALU_FMA_F16"][idx])
-                        + df["SQ_INSTS_VALU_TRANS_F16"][idx]
-                    )
-                )
-                + (
-                    64
-                    * (
-                        df["SQ_INSTS_VALU_ADD_F32"][idx]
-                        + df["SQ_INSTS_VALU_MUL_F32"][idx]
-                        + (2 * df["SQ_INSTS_VALU_FMA_F32"][idx])
-                        + df["SQ_INSTS_VALU_TRANS_F32"][idx]
-                    )
-                )
-                + (
-                    64
-                    * (
-                        df["SQ_INSTS_VALU_ADD_F64"][idx]
-                        + df["SQ_INSTS_VALU_MUL_F64"][idx]
-                        + (2 * df["SQ_INSTS_VALU_FMA_F64"][idx])
-                        + df["SQ_INSTS_VALU_TRANS_F64"][idx]
-                    )
-                )
-                + (df["SQ_INSTS_VALU_MFMA_MOPS_F16"][idx] * 512)
-                + (df["SQ_INSTS_VALU_MFMA_MOPS_BF16"][idx] * 512)
-                + (df["SQ_INSTS_VALU_MFMA_MOPS_F32"][idx] * 512)
-                + (df["SQ_INSTS_VALU_MFMA_MOPS_F64"][idx] * 512)
-            )
-            if "FP8" in supported_dt:
-                total_flops += df["SQ_INSTS_VALU_MFMA_MOPS_F8"][idx] * 512
-            if ("FP4" in supported_dt) or ("FP6" in supported_dt):
-                total_flops += df["SQ_INSTS_VALU_MFMA_MOPS_F6F4"][idx] * 512
+            total_flops += roof_eq[total_flops][mspec.gpu_arch]
+
         except KeyError:
             console_debug(
                 "roofline",
@@ -329,29 +294,8 @@ def calc_ai(mspec, sort_type, ret_df):
             )
             pass
         try:
-            valu_flops += (
-                64
-                * (
-                    df["SQ_INSTS_VALU_ADD_F16"][idx]
-                    + df["SQ_INSTS_VALU_MUL_F16"][idx]
-                    + (2 * df["SQ_INSTS_VALU_FMA_F16"][idx])
-                    + df["SQ_INSTS_VALU_TRANS_F16"][idx]
-                )
-                + 64
-                * (
-                    df["SQ_INSTS_VALU_ADD_F32"][idx]
-                    + df["SQ_INSTS_VALU_MUL_F32"][idx]
-                    + (2 * df["SQ_INSTS_VALU_FMA_F32"][idx])
-                    + df["SQ_INSTS_VALU_TRANS_F32"][idx]
-                )
-                + 64
-                * (
-                    df["SQ_INSTS_VALU_ADD_F64"][idx]
-                    + df["SQ_INSTS_VALU_MUL_F64"][idx]
-                    + (2 * df["SQ_INSTS_VALU_FMA_F64"][idx])
-                    + df["SQ_INSTS_VALU_TRANS_F64"][idx]
-                )
-            )
+            valu_flops += roof_eq[valu_flops][mspec.gpu_arch]
+
         except KeyError:
             console_debug(
                 "roofline",
@@ -360,15 +304,14 @@ def calc_ai(mspec, sort_type, ret_df):
             pass
 
         try:
-            if "FP8" in supported_dt:
-                mfma_flops_f8 += df["SQ_INSTS_VALU_MFMA_MOPS_F8"][idx] * 512
-            if ("FP4" in supported_dt) or ("FP6" in supported_dt):
-                mfma_flops_f6f4 += df["SQ_INSTS_VALU_MFMA_MOPS_F6F4"][idx] * 512
-            mfma_flops_f16 += df["SQ_INSTS_VALU_MFMA_MOPS_F16"][idx] * 512
-            mfma_flops_bf16 += df["SQ_INSTS_VALU_MFMA_MOPS_BF16"][idx] * 512
-            mfma_flops_f32 += df["SQ_INSTS_VALU_MFMA_MOPS_F32"][idx] * 512
-            mfma_flops_f64 += df["SQ_INSTS_VALU_MFMA_MOPS_F64"][idx] * 512
-            mfma_iops_i8 += df["SQ_INSTS_VALU_MFMA_MOPS_I8"][idx] * 512
+            mfma_flops_f8 += roof_eq[mfma_flops_f8][mspec.gpu_arch]
+            mfma_flops_f6f4 += roof_eq[mfma_flops_f6f4][mspec.gpu_arch]
+            mfma_flops_f16 += roof_eq[mfma_flops_f16][mspec.gpu_arch]
+            mfma_flops_bf16 += roof_eq[mfma_flops_bf16][mspec.gpu_arch]
+            mfma_flops_f32 += roof_eq[mfma_flops_f32][mspec.gpu_arch]
+            mfma_flops_f64 += roof_eq[mfma_flops_f64][mspec.gpu_arch]
+            mfma_iops_i8 += roof_eq[mfma_iops_i8][mspec.gpu_arch]
+
         except KeyError:
             console_debug(
                 "roofline",
@@ -377,11 +320,7 @@ def calc_ai(mspec, sort_type, ret_df):
             pass
 
         try:
-            lds_data += (
-                (df["SQ_LDS_IDX_ACTIVE"][idx] - df["SQ_LDS_BANK_CONFLICT"][idx])
-                * 4
-                * (mspec.lds_banks_per_cu)
-            )
+            lds_data += roof_eq[lds_data][mspec.gpu_arch] * (mspec.lds_banks_per_cu)
         except KeyError:
             console_debug(
                 "roofline",
@@ -390,7 +329,7 @@ def calc_ai(mspec, sort_type, ret_df):
             pass
 
         try:
-            L1cache_data += df["TCP_TOTAL_CACHE_ACCESSES_sum"][idx] * 64
+            L1cache_data += roof_eq[L1cache_data][mspec.gpu_arch]
         except KeyError:
             console_debug(
                 "roofline",
@@ -399,12 +338,7 @@ def calc_ai(mspec, sort_type, ret_df):
             pass
 
         try:
-            L2cache_data += (
-                df["TCP_TCC_WRITE_REQ_sum"][idx] * 64
-                + df["TCP_TCC_ATOMIC_WITH_RET_REQ_sum"][idx] * 64
-                + df["TCP_TCC_ATOMIC_WITHOUT_RET_REQ_sum"][idx] * 64
-                + df["TCP_TCC_READ_REQ_sum"][idx] * 64
-            )
+            L2cache_data += roof_eq[L2cache_data][mspec.gpu_arch]
         except KeyError:
             console_debug(
                 "roofline",
@@ -412,39 +346,7 @@ def calc_ai(mspec, sort_type, ret_df):
             )
             pass
         try:
-            if mspec.gpu_series == "MI200":
-                hbm_data += (
-                    (df["TCC_EA_RDREQ_32B_sum"][idx] * 32)
-                    + (
-                        (df["TCC_EA_RDREQ_sum"][idx] - df["TCC_EA_RDREQ_32B_sum"][idx])
-                        * 64
-                    )
-                    + (df["TCC_EA_WRREQ_64B_sum"][idx] * 64)
-                    + (
-                        (df["TCC_EA_WRREQ_sum"][idx] - df["TCC_EA_WRREQ_64B_sum"][idx])
-                        * 32
-                    )
-                )
-
-            else:
-                # Use TCC_BUBBLE_sum to calculate hbm_data
-                hbm_data += (
-                    (df["TCC_BUBBLE_sum"][idx] * 128)
-                    + (df["TCC_EA0_RDREQ_32B_sum"][idx] * 32)
-                    + (
-                        (
-                            df["TCC_EA0_RDREQ_sum"][idx]
-                            - df["TCC_BUBBLE_sum"][idx]
-                            - df["TCC_EA0_RDREQ_32B_sum"][idx]
-                        )
-                        * 64
-                    )
-                    + (
-                        (df["TCC_EA0_WRREQ_sum"][idx] - df["TCC_EA0_WRREQ_64B_sum"][idx])
-                        * 32
-                    )
-                    + (df["TCC_EA0_WRREQ_64B_sum"][idx] * 64)
-                )
+            hbm_data += roof_eq[hbm_data][mspec.gpu_arch]
         except KeyError:
             console_debug(
                 "roofline",

@@ -1,0 +1,157 @@
+---
+# ----------------------------------------
+# Roofline Calc
+#
+# Unified YAML file to hold variables and equations used for calculating roofline components for all architectures
+# ----------------------------------------
+
+# Total Flops
+# ---------------
+total_flops_base: (
+                    (
+                      64
+                      * (
+                          df["SQ_INSTS_VALU_ADD_F16"][idx]
+                          + df["SQ_INSTS_VALU_MUL_F16"][idx]
+                          + (2 * df["SQ_INSTS_VALU_FMA_F16"][idx])
+                          + df["SQ_INSTS_VALU_TRANS_F16"][idx]
+                      )
+                    )
+                    + (
+                        64
+                        * (
+                            df["SQ_INSTS_VALU_ADD_F32"][idx]
+                            + df["SQ_INSTS_VALU_MUL_F32"][idx]
+                            + (2 * df["SQ_INSTS_VALU_FMA_F32"][idx])
+                            + df["SQ_INSTS_VALU_TRANS_F32"][idx]
+                        )
+                    )
+                    + (
+                        64
+                        * (
+                            df["SQ_INSTS_VALU_ADD_F64"][idx]
+                            + df["SQ_INSTS_VALU_MUL_F64"][idx]
+                            + (2 * df["SQ_INSTS_VALU_FMA_F64"][idx])
+                            + df["SQ_INSTS_VALU_TRANS_F64"][idx]
+                        )
+                    )
+                    + (df["SQ_INSTS_VALU_MFMA_MOPS_F16"][idx] * 512)
+                    + (df["SQ_INSTS_VALU_MFMA_MOPS_BF16"][idx] * 512)
+                    + (df["SQ_INSTS_VALU_MFMA_MOPS_F32"][idx] * 512)
+                    + (df["SQ_INSTS_VALU_MFMA_MOPS_F64"][idx] * 512)
+                  )
+
+total_flops_fp8: df["SQ_INSTS_VALU_MFMA_MOPS_F8"][idx] * 512
+total_flops_f6f4: df["SQ_INSTS_VALU_MFMA_MOPS_F6F4"][idx] * 512
+
+total_flops:
+  gfx90a: ${total_flops_base}
+  # MI300 series additionally supports FP8
+  gfx940/gfx941/gfx942: ${total_flops_base} + ${total_flops_fp8}
+  # MI350 series additionally supports FP8, F6F4
+  gfx950: ${total_flops_base} + ${total_flops_fp8} + ${total_flops_f6f4}
+
+
+# VALU Flops
+# ---------------
+valu_flops_base: (
+                  64
+                  * (
+                      df["SQ_INSTS_VALU_ADD_F16"][idx]
+                      + df["SQ_INSTS_VALU_MUL_F16"][idx]
+                      + (2 * df["SQ_INSTS_VALU_FMA_F16"][idx])
+                      + df["SQ_INSTS_VALU_TRANS_F16"][idx]
+                  )
+                  + 64
+                  * (
+                      df["SQ_INSTS_VALU_ADD_F32"][idx]
+                      + df["SQ_INSTS_VALU_MUL_F32"][idx]
+                      + (2 * df["SQ_INSTS_VALU_FMA_F32"][idx])
+                      + df["SQ_INSTS_VALU_TRANS_F32"][idx]
+                  )
+                  + 64
+                  * (
+                      df["SQ_INSTS_VALU_ADD_F64"][idx]
+                      + df["SQ_INSTS_VALU_MUL_F64"][idx]
+                      + (2 * df["SQ_INSTS_VALU_FMA_F64"][idx])
+                      + df["SQ_INSTS_VALU_TRANS_F64"][idx]
+                  )
+              )
+
+valu_flops:
+  gfx90a/gfx940/gfx941/gfx942/gfx950: ${valu_flops_base}
+
+
+# MFMA Flops
+# ---------------
+mfma_flops_f8:
+  gfx90a: 0
+  gfx940/gfx941/gfx942/gfx950: df["SQ_INSTS_VALU_MFMA_MOPS_F8"][idx] * 512
+
+mfma_flops_f6f4:
+  gfx90a/gfx940/gfx941/gfx942: 0
+  gfx950: df["SQ_INSTS_VALU_MFMA_MOPS_F8"][idx] * 512
+
+mfma_flops_f16:
+  gfx90a/gfx940/gfx941/gfx942/gfx950: df["SQ_INSTS_VALU_MFMA_MOPS_F16"][idx] * 512
+
+mfma_flops_bf16:
+  gfx90a/gfx940/gfx941/gfx942/gfx950: df["SQ_INSTS_VALU_MFMA_MOPS_BF16"][idx] * 512
+
+mfma_flops_f32:
+  gfx90a/gfx940/gfx941/gfx942/gfx950: df["SQ_INSTS_VALU_MFMA_MOPS_F32"][idx] * 512
+
+mfma_flops_f64:
+  gfx90a/gfx940/gfx941/gfx942/gfx950: df["SQ_INSTS_VALU_MFMA_MOPS_F64"][idx] * 512
+
+mfma_iops_i8:
+  gfx90a/gfx940/gfx941/gfx942/gfx950: df["SQ_INSTS_VALU_MFMA_MOPS_I8"][idx] * 512
+
+
+# LDS Data
+# Note- this is per bank, multiply by mspec.banks_per_cu for LDS data across CU
+# ---------------
+lds_data:
+  gfx90a/gfx940/gfx941/gfx942/gfx950: (df["SQ_LDS_IDX_ACTIVE"][idx] - df["SQ_LDS_BANK_CONFLICT"][idx]) * 4
+
+
+# L1 Cache Data
+# ---------------
+L1cache_data:
+  gfx90a/gfx940/gfx941/gfx942/gfx950: df["TCP_TOTAL_CACHE_ACCESSES_sum"][idx] * 64
+
+
+# L2 Cache Data
+# ---------------
+L2cache_data:
+  gfx90a/gfx940/gfx941/gfx942/gfx950: (
+                                        df["TCP_TCC_WRITE_REQ_sum"][idx] * 64
+                                        + df["TCP_TCC_ATOMIC_WITH_RET_REQ_sum"][idx] * 64
+                                        + df["TCP_TCC_ATOMIC_WITHOUT_RET_REQ_sum"][idx] * 64
+                                        + df["TCP_TCC_READ_REQ_sum"][idx] * 64
+                                      )
+
+
+# HBM Data
+# ---------------
+hbm_data:
+  gfx90a: (
+            (df["TCC_EA_RDREQ_32B_sum"][idx] * 32)
+            + ((df["TCC_EA_RDREQ_sum"][idx] - df["TCC_EA_RDREQ_32B_sum"][idx]) * 64)
+            + (df["TCC_EA_WRREQ_64B_sum"][idx] * 64)
+            + ((df["TCC_EA_WRREQ_sum"][idx] - df["TCC_EA_WRREQ_64B_sum"][idx])* 32)
+          )
+  # MI300 series and above uses TCC_BUBBLE_sum to calculate hbm_data
+  gfx940/gfx941/gfx942/gfx950: (
+                                  (df["TCC_BUBBLE_sum"][idx] * 128)
+                                  + (df["TCC_EA0_RDREQ_32B_sum"][idx] * 32)
+                                  + (
+                                      (df["TCC_EA0_RDREQ_sum"][idx] - df["TCC_BUBBLE_sum"][idx] - df["TCC_EA0_RDREQ_32B_sum"][idx])
+                                      * 64
+                                    )
+                                  + (
+                                      (df["TCC_EA0_WRREQ_sum"][idx] - df["TCC_EA0_WRREQ_64B_sum"][idx])
+                                      * 32
+                                    )
+                                  + (df["TCC_EA0_WRREQ_64B_sum"][idx] * 64)
+                                )
