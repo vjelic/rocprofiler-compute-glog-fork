@@ -285,7 +285,8 @@ def calc_ai(mspec, sort_type, roof_eq, ret_df):
 
         kernelName = df["Kernel_Name"][idx]
         try:
-            total_flops += roof_eq[total_flops][mspec.gpu_arch]
+            for ops in roof_eq["total_flops"][mspec.gpu_arch]:
+                total_flops += eval(ops)
 
         except KeyError:
             console_debug(
@@ -304,8 +305,8 @@ def calc_ai(mspec, sort_type, roof_eq, ret_df):
             pass
 
         try:
-            mfma_flops_f8 += roof_eq[mfma_flops_f8][mspec.gpu_arch]
             mfma_flops_f6f4 += roof_eq[mfma_flops_f6f4][mspec.gpu_arch]
+            mfma_flops_f8 += roof_eq[mfma_flops_f8][mspec.gpu_arch]
             mfma_flops_f16 += roof_eq[mfma_flops_f16][mspec.gpu_arch]
             mfma_flops_bf16 += roof_eq[mfma_flops_bf16][mspec.gpu_arch]
             mfma_flops_f32 += roof_eq[mfma_flops_f32][mspec.gpu_arch]
