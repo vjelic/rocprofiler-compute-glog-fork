@@ -295,7 +295,7 @@ def calc_ai(mspec, sort_type, roof_eq, ret_df):
             )
             pass
         try:
-            valu_flops += roof_eq[valu_flops][mspec.gpu_arch]
+            valu_flops += eval(roof_eq[valu_flops][mspec.gpu_arch])
 
         except KeyError:
             console_debug(
@@ -305,13 +305,13 @@ def calc_ai(mspec, sort_type, roof_eq, ret_df):
             pass
 
         try:
-            mfma_flops_f6f4 += roof_eq[mfma_flops_f6f4][mspec.gpu_arch]
-            mfma_flops_f8 += roof_eq[mfma_flops_f8][mspec.gpu_arch]
-            mfma_flops_f16 += roof_eq[mfma_flops_f16][mspec.gpu_arch]
-            mfma_flops_bf16 += roof_eq[mfma_flops_bf16][mspec.gpu_arch]
-            mfma_flops_f32 += roof_eq[mfma_flops_f32][mspec.gpu_arch]
-            mfma_flops_f64 += roof_eq[mfma_flops_f64][mspec.gpu_arch]
-            mfma_iops_i8 += roof_eq[mfma_iops_i8][mspec.gpu_arch]
+            mfma_flops_f6f4 += eval(roof_eq[mfma_flops_f6f4][mspec.gpu_arch])
+            mfma_flops_f8 += eval(roof_eq[mfma_flops_f8][mspec.gpu_arch])
+            mfma_flops_f16 += eval(roof_eq[mfma_flops_f16][mspec.gpu_arch])
+            mfma_flops_bf16 += eval(roof_eq[mfma_flops_bf16][mspec.gpu_arch])
+            mfma_flops_f32 += eval(roof_eq[mfma_flops_f32][mspec.gpu_arch])
+            mfma_flops_f64 += eval(roof_eq[mfma_flops_f64][mspec.gpu_arch])
+            mfma_iops_i8 += eval(roof_eq[mfma_iops_i8][mspec.gpu_arch])
 
         except KeyError:
             console_debug(
@@ -321,7 +321,7 @@ def calc_ai(mspec, sort_type, roof_eq, ret_df):
             pass
 
         try:
-            lds_data += roof_eq[lds_data][mspec.gpu_arch] * (mspec.lds_banks_per_cu)
+            lds_data += eval(roof_eq[lds_data][mspec.gpu_arch]) * (mspec.lds_banks_per_cu)
         except KeyError:
             console_debug(
                 "roofline",
@@ -330,7 +330,7 @@ def calc_ai(mspec, sort_type, roof_eq, ret_df):
             pass
 
         try:
-            L1cache_data += roof_eq[L1cache_data][mspec.gpu_arch]
+            L1cache_data += eval(roof_eq[L1cache_data][mspec.gpu_arch])
         except KeyError:
             console_debug(
                 "roofline",
@@ -339,7 +339,7 @@ def calc_ai(mspec, sort_type, roof_eq, ret_df):
             pass
 
         try:
-            L2cache_data += roof_eq[L2cache_data][mspec.gpu_arch]
+            L2cache_data += eval(roof_eq[L2cache_data][mspec.gpu_arch])
         except KeyError:
             console_debug(
                 "roofline",
@@ -347,7 +347,7 @@ def calc_ai(mspec, sort_type, roof_eq, ret_df):
             )
             pass
         try:
-            hbm_data += roof_eq[hbm_data][mspec.gpu_arch]
+            hbm_data += eval(roof_eq[hbm_data][mspec.gpu_arch])
         except KeyError:
             console_debug(
                 "roofline",
