@@ -30,6 +30,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import plotext as plt
 import plotly.graph_objects as go
 import yaml
 from dash import dcc, html
@@ -426,6 +427,177 @@ class Roofline:
         fig.update_yaxes(type="log", autorange=True)
 
         return fig
+
+    def cli_generate_plot(self, t_df):
+        console_debug("roofline", "Generating roofline plot for CLI")
+        if (
+            not isinstance(self.__run_parameters["workload_dir"], list)
+            and self.__run_parameters["workload_dir"] != None
+        ):
+            self.roof_setup()
+
+        # Change vL1D to a interpretable str, if required
+        if "vL1D" in self.__run_parameters["mem_level"]:
+            self.__run_parameters["mem_level"].remove("vL1D")
+            self.__run_parameters["mem_level"].append("L1")
+
+        app_path = str(
+            Path(self.__run_parameters["workload_dir"]).joinpath("pmc_perf.csv")
+        )
+        roofline_exists = Path(app_path).is_file()
+        if not roofline_exists:
+            console_error("roofline", "{} does not exist".format(app_path))
+        t_df = OrderedDict()
+        t_df["pmc_perf"] = pd.read_csv(app_path)
+
+        color_scheme = {
+            "HBM": "blue+",
+            "L2": "green+",
+            "L1": "red+",
+            "LDS": "orange+",
+            "VALU": "white",
+            "MFMA": "magenta+",
+        }
+
+        kernel_markers = {
+            0: "star",
+            1: "cross",
+            2: "sd",
+            3: "shamrock",
+            4: "at",
+            5: "atom",
+        }
+
+        for dtype in self.__run_parameters["roofline_data_type"]:
+            ops_flops = "OP" if (dtype[:1] == "I") else "FLOP"  # For printing purposes
+
+            # Plot BW Lines
+            if self.__run_parameters["mem_level"] == "ALL":
+                cache_hierarchy = ["HBM", "L2", "L1", "LDS"]
+            else:
+                cache_hierarchy = self.__run_parameters["mem_level"]
+
+            for cache_level in cache_hierarchy:
+                plt.plot(
+                    self.__ceiling_data[cache_level.lower()][0],
+                    self.__ceiling_data[cache_level.lower()][1],
+                    label="{}-{}".format(cache_level, dtype),
+                    marker="braille",
+                    color=color_scheme[cache_level],
+                )
+                plt.text(
+                    str(round(self.__ceiling_data[cache_level.lower()][2])) + " GB/s",
+                    x=self.__ceiling_data[cache_level.lower()][0][0],
+                    y=self.__ceiling_data[cache_level.lower()][1][0],
+                    background="black",
+                    color="white",
+                    alignment="left",
+                )
+                console_debug(
+                    "roofline",
+                    cache_level
+                    + ": [{},{}], [{},{}], {}".format(
+                        str(self.__ceiling_data[cache_level.lower()][0][0]),
+                        str(self.__ceiling_data[cache_level.lower()][0][1]),
+                        str(self.__ceiling_data[cache_level.lower()][1][0]),
+                        str(self.__ceiling_data[cache_level.lower()][1][1]),
+                        str(self.__ceiling_data[cache_level.lower()][2]),
+                    ),
+                )
+
+            # Plot VALU and MFMA Peak
+            if dtype in self.__roofline_calc["GROUPED_DATATYPES"]["PEAK_OPS_DATATYPES"]:
+                plt.plot(
+                    self.__ceiling_data["valu"][0],
+                    self.__ceiling_data["valu"][1],
+                    label="Peak VALU-{}".format(dtype),
+                    marker="braille",
+                    color=color_scheme["VALU"],
+                )
+                plt.text(
+                    str(round(self.__ceiling_data["valu"][2]))
+                    + " G{}/s".format(ops_flops),
+                    x=self.__ceiling_data["valu"][0][1] - 800,
+                    y=self.__ceiling_data["valu"][1][1],
+                    background="black",
+                    color="white",
+                    alignment="right",
+                )
+                console_debug(
+                    "roofline",
+                    "VALU: [{},{}], [{},{}], {}".format(
+                        str(self.__ceiling_data["valu"][0][0]),
+                        str(self.__ceiling_data["valu"][0][1]),
+                        str(self.__ceiling_data["valu"][1][0]),
+                        str(self.__ceiling_data["valu"][1][1]),
+                        str(self.__ceiling_data["valu"][2]),
+                    ),
+                )
+
+            if dtype in self.__roofline_calc["GROUPED_DATATYPES"]["MFMA_DATATYPES"]:
+                plt.plot(
+                    self.__ceiling_data["mfma"][0],
+                    self.__ceiling_data["mfma"][1],
+                    label="Peak MFMA-{}".format(dtype),
+                    marker="braille",
+                    color=color_scheme["MFMA"],
+                )
+                plt.text(
+                    str(round(self.__ceiling_data["mfma"][2]))
+                    + " G{}/s".format(ops_flops),
+                    x=self.__ceiling_data["mfma"][0][1] - 800,
+                    y=self.__ceiling_data["mfma"][1][1],
+                    background="black",
+                    color="white",
+                    alignment="right",
+                )
+                console_debug(
+                    "roofline",
+                    "MFMA: [{},{}], [{},{}], {}".format(
+                        str(self.__ceiling_data["mfma"][0][0]),
+                        str(self.__ceiling_data["mfma"][0][1]),
+                        str(self.__ceiling_data["mfma"][1][0]),
+                        str(self.__ceiling_data["mfma"][1][1]),
+                        str(self.__ceiling_data["mfma"][2]),
+                    ),
+                )
+
+        # # Plot Application AI,  todo: show kernel name
+        for cache_level in cache_hierarchy:
+            key = "ai_" + cache_level.lower()
+            if key in self.__ai_data:
+                for i in range(len(self.__ai_data["kernelNames"])):
+                    # Zero intensity level means no data reported for this cache level, skip plotting for this kernel to avoid log error
+                    if self.__ai_data[key][0][i] > 0 and self.__ai_data[key][1][i] > 0:
+                        plt.plot(
+                            [self.__ai_data[key][0][i]],
+                            [self.__ai_data[key][1][i]],
+                            label="AI_"
+                            + cache_level
+                            + "_{}".format(self.__ai_data["kernelNames"][i]),
+                            color=color_scheme[cache_level],
+                            marker=kernel_markers[i % len(kernel_markers)],
+                        )
+                    console_debug(
+                        "roofline",
+                        "AI_{}: {}, {}".format(
+                            self.__ai_data["kernelNames"][i],
+                            self.__ai_data[key][0][i],
+                            self.__ai_data[key][1][i],
+                        ),
+                    )
+
+        plt.xlabel("Arithmetic Intensity (FLOPs/Byte)")
+        plt.ylabel("Performance (GFLOP/sec)")
+
+        # canvas config
+        plt.theme("pro")
+        plt.xscale("log")
+        plt.yscale("log")
+
+        # Build all figures
+        # Print plot using `plt._utility.write(self.cli_generate_plot(t_df))`
+        return plt.build()
 
     @demarcate
     def standalone_roofline(self):
