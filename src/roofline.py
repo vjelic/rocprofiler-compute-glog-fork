@@ -428,7 +428,7 @@ class Roofline:
 
         return fig
 
-    def cli_generate_plot(self, t_df):
+    def cli_generate_plot(self):
         console_debug("roofline", "Generating roofline plot for CLI")
         if (
             not isinstance(self.__run_parameters["workload_dir"], list)
@@ -596,7 +596,7 @@ class Roofline:
         plt.yscale("log")
 
         # Build all figures
-        # Print plot using `plt._utility.write(self.cli_generate_plot(t_df))`
+        # Print plot using `plt._utility.write(self.cli_generate_plot())`
         return plt.build()
 
     @demarcate
