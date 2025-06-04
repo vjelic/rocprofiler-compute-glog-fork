@@ -37,10 +37,7 @@ from dash import dcc, html
 
 from config import rocprof_compute_home
 from utils.logger import console_debug, console_error, console_log, demarcate
-from utils.roofline_calc import (
-    calc_ai,
-    constuct_roof,
-)
+from utils.roofline_calc import GROUPED_DATATYPES, calc_ai, constuct_roof
 from utils.utils import mibench
 
 SYMBOLS = [0, 1, 2, 3, 4, 5, 13, 17, 18, 20]
@@ -104,8 +101,10 @@ class Roofline:
         # Load roofline equations from yaml
         console_debug("roofline", "Loading roofline equations from YAML file")
         try:
-            roof_yaml = Path(str(rocprof_compute_home)).joinpath(
-                "utils/roofline_calc.yaml"
+            roof_yaml = Path(
+                str(self.__args.config_dir.joinpath(self.__mspec.gpuArch)).joinpath(
+                    "0400_roofline.yaml"
+                )
             )
             with open(roof_yaml, "r") as file:
                 self.__roofline_calc = yaml.safe_load(file)
@@ -146,10 +145,7 @@ class Roofline:
         ops_dt_list = flops_dt_list = ""
         for dt in self.__run_parameters["roofline_data_type"]:
             # Do not generate a roofline figure if the datatype is not supported on this gpu_arch
-            if (
-                not str(dt)
-                in self.__roofline_calc["SUPPORTED_DATATYPES"][self.__mspec.gpu_arch]
-            ):
+            if not str(dt) in self.__roofline_calc["Supported_Datatypes"]:
                 console_error(
                     "{} is not a supported datatype for roofline profiling on {}".format(
                         str(dt), self.__mspec.gpu_model
@@ -374,7 +370,7 @@ class Roofline:
             )
 
         # Plot peak VALU ceiling
-        if dtype in self.__roofline_calc["GROUPED_DATATYPES"]["PEAK_OPS_DATATYPES"]:
+        if dtype in GROUPED_DATATYPES["PEAK_OPS_DATATYPES"]:
             fig.add_trace(
                 go.Scatter(
                     x=self.__ceiling_data["valu"][0],
@@ -399,7 +395,7 @@ class Roofline:
             )
 
         # Plot peak MFMA ceiling
-        if dtype in self.__roofline_calc["GROUPED_DATATYPES"]["MFMA_DATATYPES"]:
+        if dtype in GROUPED_DATATYPES["MFMA_DATATYPES"]:
             fig.add_trace(
                 go.Scatter(
                     x=self.__ceiling_data["mfma"][0],
@@ -506,7 +502,7 @@ class Roofline:
                 )
 
             # Plot VALU and MFMA Peak
-            if dtype in self.__roofline_calc["GROUPED_DATATYPES"]["PEAK_OPS_DATATYPES"]:
+            if dtype in GROUPED_DATATYPES["PEAK_OPS_DATATYPES"]:
                 plt.plot(
                     self.__ceiling_data["valu"][0],
                     self.__ceiling_data["valu"][1],
@@ -534,7 +530,7 @@ class Roofline:
                     ),
                 )
 
-            if dtype in self.__roofline_calc["GROUPED_DATATYPES"]["MFMA_DATATYPES"]:
+            if dtype in GROUPED_DATATYPES["MFMA_DATATYPES"]:
                 plt.plot(
                     self.__ceiling_data["mfma"][0],
                     self.__ceiling_data["mfma"][1],

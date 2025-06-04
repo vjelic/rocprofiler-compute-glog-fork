@@ -1,0 +1,170 @@
+---
+# Add description/tips for each metric in this section.
+# So it could be shown in hover.
+Metric Description:
+  Supported_Datatypes: # Unsupported: F4, F6
+    - "FP8"
+    - "FP16"
+    - "BF16"
+    - "FP32"
+    - "FP64"
+    - "I8"
+    - "I32"
+    - "I64"
+
+# Define the panel properties and properties of each metric in the panel.
+Panel Config:
+  id: 400
+  title: Roofline
+  data source:
+    - metric_table:
+        id: 401
+        title: Roofline
+        header:
+          metric: Metric
+          value: Value
+          tips: Tips
+        metric:
+          # ----------------------------------------
+
+          # Total Flops
+          # MI300 series additionally supports FP8
+          # ---------------
+          Total Flops:
+            value: (
+                (
+                  64
+                  * (
+                      df["SQ_INSTS_VALU_ADD_F16"][idx]
+                      + df["SQ_INSTS_VALU_MUL_F16"][idx]
+                      + (2 * df["SQ_INSTS_VALU_FMA_F16"][idx])
+                      + df["SQ_INSTS_VALU_TRANS_F16"][idx]
+                  )
+                )
+                + (
+                    64
+                    * (
+                        df["SQ_INSTS_VALU_ADD_F32"][idx]
+                        + df["SQ_INSTS_VALU_MUL_F32"][idx]
+                        + (2 * df["SQ_INSTS_VALU_FMA_F32"][idx])
+                        + df["SQ_INSTS_VALU_TRANS_F32"][idx]
+                    )
+                )
+                + (
+                    64
+                    * (
+                        df["SQ_INSTS_VALU_ADD_F64"][idx]
+                        + df["SQ_INSTS_VALU_MUL_F64"][idx]
+                        + (2 * df["SQ_INSTS_VALU_FMA_F64"][idx])
+                        + df["SQ_INSTS_VALU_TRANS_F64"][idx]
+                    )
+                )
+                + (df["SQ_INSTS_VALU_MFMA_MOPS_F16"][idx] * 512)
+                + (df["SQ_INSTS_VALU_MFMA_MOPS_BF16"][idx] * 512)
+                + (df["SQ_INSTS_VALU_MFMA_MOPS_F32"][idx] * 512)
+                + (df["SQ_INSTS_VALU_MFMA_MOPS_F64"][idx] * 512)
+                + (df["SQ_INSTS_VALU_MFMA_MOPS_F8"][idx] * 512)
+              )
+            tips:
+
+        # VALU Flops
+        # ---------------
+        Valu Flops:
+          value: (
+              64
+              * (
+                  df["SQ_INSTS_VALU_ADD_F16"][idx]
+                  + df["SQ_INSTS_VALU_MUL_F16"][idx]
+                  + (2 * df["SQ_INSTS_VALU_FMA_F16"][idx])
+                  + df["SQ_INSTS_VALU_TRANS_F16"][idx]
+              )
+              + 64
+              * (
+                  df["SQ_INSTS_VALU_ADD_F32"][idx]
+                  + df["SQ_INSTS_VALU_MUL_F32"][idx]
+                  + (2 * df["SQ_INSTS_VALU_FMA_F32"][idx])
+                  + df["SQ_INSTS_VALU_TRANS_F32"][idx]
+              )
+              + 64
+              * (
+                  df["SQ_INSTS_VALU_ADD_F64"][idx]
+                  + df["SQ_INSTS_VALU_MUL_F64"][idx]
+                  + (2 * df["SQ_INSTS_VALU_FMA_F64"][idx])
+                  + df["SQ_INSTS_VALU_TRANS_F64"][idx]
+              )
+            )
+          tips:
+
+        # MFMA Flops
+        # ---------------
+        MFMA F6F4 Flops:
+          value: None
+          tips:
+
+        MFMA F8 Flops:
+          value: (df["SQ_INSTS_VALU_MFMA_MOPS_F8"][idx] * 512)
+          tips:
+
+        MFMA F16 Flops:
+          value: (df["SQ_INSTS_VALU_MFMA_MOPS_F16"][idx] * 512)
+          tips:
+
+        MFMA BF16 Flops:
+          value: (df["SQ_INSTS_VALU_MFMA_MOPS_BF16"][idx] * 512)
+          tips:
+
+        MFMA F32 Flops:
+          value: (df["SQ_INSTS_VALU_MFMA_MOPS_F32"][idx] * 512)
+          tips:
+
+        MFMA F64 Flops:
+          value: (df["SQ_INSTS_VALU_MFMA_MOPS_F64"][idx] * 512)
+          tips:
+
+        MFMA I8 IOPs:
+          value: (df["SQ_INSTS_VALU_MFMA_MOPS_I8"][idx] * 512)
+          tips:
+
+        # LDS Data
+        # Note- this is per bank, multiply by 32 (banks per CU on gfx941) for LDS data across CU.
+        # ---------------
+        LDS Data Cache:
+          value: ((df["SQ_LDS_IDX_ACTIVE"][idx] - df["SQ_LDS_BANK_CONFLICT"][idx]) * 4) * 32
+          tips:
+
+        # L1 Cache Data
+        # ---------------
+        L1 Data Cache:
+          value: (df["TCP_TOTAL_CACHE_ACCESSES_sum"][idx] * 64)
+          tips:
+
+        # L2 Cache Data
+        # ---------------
+        L2 Data Cache:
+          value: (
+              df["TCP_TCC_WRITE_REQ_sum"][idx] * 64
+              + df["TCP_TCC_ATOMIC_WITH_RET_REQ_sum"][idx] * 64
+              + df["TCP_TCC_ATOMIC_WITHOUT_RET_REQ_sum"][idx] * 64
+              + df["TCP_TCC_READ_REQ_sum"][idx] * 64
+            )
+          tips:
+
+        # HBM Data
+        # MI300 series and above uses TCC_BUBBLE_sum to calculate hbm_data
+        # ---------------
+        HBM Data Cache:
+          value: (
+              (df["TCC_BUBBLE_sum"][idx] * 128)
+              + (df["TCC_EA0_RDREQ_32B_sum"][idx] * 32)
+              + ( 64 *
+                  (df["TCC_EA0_RDREQ_sum"][idx] - df["TCC_BUBBLE_sum"][idx] - df["TCC_EA0_RDREQ_32B_sum"][idx])
+                )
+              + ( 32 *
+                  (df["TCC_EA0_WRREQ_sum"][idx] - df["TCC_EA0_WRREQ_64B_sum"][idx])
+                )
+              + (df["TCC_EA0_WRREQ_64B_sum"][idx] * 64)
+            )
+          tips:
+
+        comparable: false # for now
+        cli_style: mem_chart

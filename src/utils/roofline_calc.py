@@ -43,6 +43,29 @@ FONT_WEIGHT = "bold"
 
 TOP_N = 10
 
+GROUPED_DATATYPES = {
+    "PEAK_OPS_DATATYPES": [
+        "FP8",
+        "FP16",
+        "BF16",
+        "FP32",
+        "FP64",
+        "I8",
+        "I32",
+        "I64",
+    ],
+    "MFMA_DATATYPES": [
+        "FP4",  # FP4 and FP6 are combined into PC "F6F4"
+        "FP6",
+        "FP8",
+        "FP16",
+        "BF16",
+        "FP32",
+        "FP64",
+        "I8",
+    ],
+}
+
 
 ################################################
 # Helper funcs
@@ -108,7 +131,7 @@ def calc_ceilings(roofline_parameters, dtype, roof_types, benchmark_data):
 
     ops_flops = "Ops" if (dtype[:1] == "I") else "Flops"
 
-    if dtype in roof_types["PEAK_OPS_DATATYPES"]:
+    if dtype in GROUPED_DATATYPES["PEAK_OPS_DATATYPES"]:
         peakOps = float(
             benchmark_data[dtype + "{}".format(ops_flops)][
                 roofline_parameters["device_id"]
@@ -123,7 +146,7 @@ def calc_ceilings(roofline_parameters, dtype, roof_types, benchmark_data):
         x1 = float(XMIN)
         y1 = float(XMIN) * peakBw
 
-        if dtype in roof_types["PEAK_OPS_DATATYPES"]:
+        if dtype in GROUPED_DATATYPES["PEAK_OPS_DATATYPES"]:
             x2 = peakOps / peakBw
             y2 = peakOps
 
@@ -131,7 +154,7 @@ def calc_ceilings(roofline_parameters, dtype, roof_types, benchmark_data):
             x1_mfma = peakOps / peakBw
             y1_mfma = peakOps
 
-        if dtype in roof_types["MFMA_DATATYPES"]:
+        if dtype in GROUPED_DATATYPES["MFMA_DATATYPES"]:
             target_precision = (dtype) if (dtype[:1] == "I") else ("F" + dtype[2:])
 
             peakMFMA = float(
@@ -162,7 +185,7 @@ def calc_ceilings(roofline_parameters, dtype, roof_types, benchmark_data):
     # -------------------------------------------------------------------------------------
     #                                     Plot computing roof
     # -------------------------------------------------------------------------------------
-    if dtype in roof_types["PEAK_OPS_DATATYPES"]:
+    if dtype in GROUPED_DATATYPES["PEAK_OPS_DATATYPES"]:
         # Plot FMA roof
         x0 = XMAX
         if x2 < x0:
@@ -174,7 +197,7 @@ def calc_ceilings(roofline_parameters, dtype, roof_types, benchmark_data):
         graphPoints["valu"].append(peakOps)
 
     # Plot MFMA roof
-    if dtype in roof_types["MFMA_DATATYPES"]:  # assert that mfma has been assigned
+    if dtype in GROUPED_DATATYPES["MFMA_DATATYPES"]:  # assert that mfma has been assigned
         x0_mfma = XMAX
         if x2_mfma < x0_mfma:
             x0_mfma = x2_mfma
