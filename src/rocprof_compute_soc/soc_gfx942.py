@@ -73,7 +73,9 @@ class gfx942_soc(OmniSoC_Base):
                 "TCC_channels": 16,
             }
         )
-        self.roofline_obj = Roofline(args, self._mspec)
+        # Create roofline object if mode is provided; skip for --specs
+        if hasattr(self.get_args(), "mode") and self.get_args().mode:
+            self.roofline_obj = Roofline(args, self._mspec)
 
         # Workaround for broken --showmclkrange
         # MI300X/MI300A/MI308X have 1300MHz mclk

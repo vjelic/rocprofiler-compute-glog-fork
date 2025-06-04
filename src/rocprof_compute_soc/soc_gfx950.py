@@ -27,36 +27,26 @@ from pathlib import Path
 import config
 from rocprof_compute_soc.soc_base import OmniSoC_Base
 from roofline import Roofline
-from utils.utils import console_error, console_log, demarcate, mibench
+from utils.logger import demarcate
+from utils.utils import console_error, console_log, console_warning, mibench
 
 
-class gfx941_soc(OmniSoC_Base):
+class gfx950_soc(OmniSoC_Base):
     def __init__(self, args, mspec):
         super().__init__(args, mspec)
-        self.set_arch("gfx941")
+        self.set_arch("gfx950")
         if hasattr(self.get_args(), "roof_only") and self.get_args().roof_only:
             self.set_perfmon_dir(
                 str(
                     Path(str(config.rocprof_compute_home)).joinpath(
                         "rocprof_compute_soc",
                         "profile_configs",
-                        "gfx940",
+                        "gfx950",
                         "roofline",
                     )
                 )
             )
-        else:
-            # NB: We're using generalized Mi300 perfmon configs
-            self.set_perfmon_dir(
-                str(
-                    Path(str(config.rocprof_compute_home)).joinpath(
-                        "rocprof_compute_soc",
-                        "profile_configs",
-                        "gfx940",
-                    )
-                )
-            )
-        self.set_compatible_profilers(["rocprofv1", "rocprofv2", "rocprofv3"])
+        self.set_compatible_profilers(["rocprofv3", "rocprofiler-sdk"])
         # Per IP block max number of simultaneous counters. GFX IP Blocks
         self.set_perfmon_config(
             {
@@ -70,7 +60,7 @@ class gfx941_soc(OmniSoC_Base):
                 "SPI": 2,
                 "GRBM": 2,
                 "GDS": 4,
-                "TCC_channels": 32,
+                "TCC_channels": 16,
             }
         )
         # Create roofline object if mode is provided; skip for --specs
@@ -98,6 +88,12 @@ class gfx941_soc(OmniSoC_Base):
         super().post_profiling()
 
         if not self.get_args().no_roof:
+            pmc_path = str(Path(self.get_args().path).joinpath("pmc_perf.csv"))
+            if not Path(pmc_path).is_file():
+                console_warning(
+                    "Incomplete or missing profiling data. Skipping roofline."
+                )
+                return
             console_log(
                 "roofline", "Checking for roofline.csv in " + str(self.get_args().path)
             )

@@ -165,8 +165,14 @@ class OmniSoC_Base:
         )
 
         # we get the max mclk from rocm-smi --showmclkrange
-        rocm_smi_mclk = run(["rocm-smi", "--showmclkrange"], exit_on_error=True)
-        self._mspec.max_mclk = search(r"(\d+)Mhz\s*$", rocm_smi_mclk)
+        # Regular expression to extract the max memory clock (third frequency level in MEM)
+        memory_clock_pattern = (
+            r"MEM:\s*[^:]*FREQUENCY_LEVELS:\s*(?:\d+: \d+ MHz\s*){2}(\d+)\s*MHz"
+        )
+        amd_smi_mclk = run(["amd-smi", "static"], exit_on_error=True)
+        self._mspec.max_mclk = search(memory_clock_pattern, amd_smi_mclk)
+
+        console_debug("max mem clock is {}".format(self._mspec.max_mclk))
 
         # these are just max's now, because the parsing was broken and this was inconsistent
         # with how we use the clocks elsewhere (all max, all the time)
@@ -347,6 +353,14 @@ def perfmon_coalesce(pmc_files_list, perfmon_config, workload_dir, spatial_multi
                     # v3 doesn't seem to support this counter
                     if using_v3():
                         if ctr.startswith("TCC_BUBBLE"):
+                            continue
+
+                    # Remove me later:
+                    # v1 and v2 don't support these counters
+                    if not using_v3():
+                        if ctr.startswith("SQ_INSTS_VALU_MFMA_F8") or ctr.startswith(
+                            "SQ_INSTS_VALU_MFMA_MOPS_F8"
+                        ):
                             continue
 
                     # Channel counter e.g. TCC_ATOMIC[0]

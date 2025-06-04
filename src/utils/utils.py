@@ -47,6 +47,18 @@ rocprof_cmd = ""
 rocprof_args = ""
 
 
+def is_tcc_channel_counter(counter):
+    return counter.startswith("TCC") and counter.endswith("]")
+
+
+def using_v1():
+    return "ROCPROF" in os.environ.keys() and os.environ["ROCPROF"].endswith("rocprof")
+
+
+def using_v3():
+    return "ROCPROF" in os.environ.keys() and os.environ["ROCPROF"].endswith("rocprofv3")
+
+
 def demarcate(function):
     def wrap_function(*args, **kwargs):
         logging.trace("----- [entering function] -> %s()" % (function.__qualname__))
@@ -482,6 +494,15 @@ def v3_counter_csv_to_v2_csv(counter_file, agent_info_filepath, converted_csv_fi
         columns="Counter_Name",
         values="Counter_Value",
     ).reset_index()
+
+    # NB: Agent_Id is int in older rocporfv3, now switched to string with prefix "Agent ". We need to make sure handle both cases.
+    console_debug(
+        "The type of Agent ID from counter csv file is {}".format(
+            result["Agent_Id"].dtype
+        )
+    )
+    if result["Agent_Id"].dtype == "object":
+        result["Agent_Id"] = result["Agent_Id"].str.extract("(\d+)").astype("int64")
 
     # Grab the Wave_Front_Size column from agent info
     result = result.merge(

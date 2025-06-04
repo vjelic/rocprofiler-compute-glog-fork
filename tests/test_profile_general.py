@@ -126,8 +126,7 @@ ALL_CSVS_MI300 = sorted(
 
 ROOF_ONLY_FILES = sorted(
     [
-        "empirRoof_gpu-0_fp32_fp64.pdf",
-        "empirRoof_gpu-0_int8_fp16.pdf",
+        "empirRoof_gpu-0_FP32.pdf",
         "pmc_perf.csv",
         "pmc_perf_0.csv",
         "pmc_perf_1.csv",
@@ -270,8 +269,8 @@ def counter_compare(test_name, errors_pd, baseline_df, run_df, threshold=5):
 
 def run(cmd):
     p = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    if cmd[0] == "rocm-smi" and p.returncode == 8:
-        print("ERROR: No GPU detected. Unable to load rocm-smi")
+    if cmd[0] == "amd-smi" and p.returncode == 8:
+        print("ERROR: No GPU detected. Unable to load amd-smi")
         assert 0
     return p.stdout.decode("ascii")
 
