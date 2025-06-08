@@ -101,11 +101,9 @@ class Roofline:
         # Load roofline equations from yaml
         console_debug("roofline", "Loading roofline equations from YAML file")
         try:
-            roof_yaml = Path(
-                str(self.__args.config_dir.joinpath(self.__mspec.gpuArch)).joinpath(
-                    "0400_roofline.yaml"
-                )
-            )
+            roof_yaml = (
+                Path(self.__args.config_dir).joinpath(self.__mspec.gpu_arch)
+            ).joinpath("0400_roofline.yaml")
             with open(roof_yaml, "r") as file:
                 self.__roofline_calc = yaml.safe_load(file)
         except FileNotFoundError:
@@ -132,7 +130,12 @@ class Roofline:
         # Create arithmetic intensity data that will populate the roofline model
         console_debug("roofline", "Path: %s" % self.__run_parameters["workload_dir"])
         self.__ai_data = calc_ai(
-            self.__mspec, self.__run_parameters["sort_type"], self.__roofline_calc, ret_df
+            self.__mspec,
+            self.__run_parameters["sort_type"],
+            self.__roofline_calc["Panel Config"]["data source"][0]["metric_table"][
+                "metric"
+            ],
+            ret_df,
         )
 
         msg = "AI at each mem level:"
@@ -145,7 +148,10 @@ class Roofline:
         ops_dt_list = flops_dt_list = ""
         for dt in self.__run_parameters["roofline_data_type"]:
             # Do not generate a roofline figure if the datatype is not supported on this gpu_arch
-            if not str(dt) in self.__roofline_calc["Supported_Datatypes"]:
+            if (
+                not str(dt)
+                in self.__roofline_calc["Metric Description"]["Supported_Datatypes"]
+            ):
                 console_error(
                     "{} is not a supported datatype for roofline profiling on {}".format(
                         str(dt), self.__mspec.gpu_model
@@ -268,7 +274,6 @@ class Roofline:
         self.__ceiling_data = constuct_roof(
             roofline_parameters=self.__run_parameters,
             dtype=dtype,
-            roof_types=self.__roofline_calc["GROUPED_DATATYPES"],
         )
         ops_flops = "OP" if (dtype[:1] == "I") else "FLOP"  # For printing purposes
         console_debug("roofline", "Ceiling data:\n%s" % self.__ceiling_data)

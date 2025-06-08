@@ -116,7 +116,7 @@ def get_color(catagory):
 # -------------------------------------------------------------------------------------
 #                           Plot BW at each cache level
 # -------------------------------------------------------------------------------------
-def calc_ceilings(roofline_parameters, dtype, roof_types, benchmark_data):
+def calc_ceilings(roofline_parameters, dtype, benchmark_data):
     """Given benchmarking data, calculate ceilings (or peak performance) for empirical roofline"""
     # TODO: This is where filtering by memory level will need to occur for standalone
     graphPoints = {"hbm": [], "l2": [], "l1": [], "lds": [], "valu": [], "mfma": []}
@@ -247,9 +247,9 @@ def calc_ai(mspec, sort_type, roof_eq, ret_df):
 
         kernelName = df["Kernel_Name"][idx]
         try:
-            for ops in roof_eq["total_flops"][mspec.gpu_arch]:
-                total_flops += eval(ops)
-
+            eq = roof_eq["Total Flops"]["value"]
+            if eq is not None:
+                total_flops += eval(eq)
         except KeyError:
             console_debug(
                 "roofline",
@@ -257,8 +257,9 @@ def calc_ai(mspec, sort_type, roof_eq, ret_df):
             )
             pass
         try:
-            valu_flops += eval(roof_eq["valu_flops"][mspec.gpu_arch])
-
+            eq = roof_eq["VALU Flops"]["value"]
+            if eq is not None:
+                valu_flops += eval(eq)
         except KeyError:
             console_debug(
                 "roofline",
@@ -267,14 +268,39 @@ def calc_ai(mspec, sort_type, roof_eq, ret_df):
             pass
 
         try:
-            mfma_flops_f6f4 += eval(roof_eq["mfma_flops_f6f4"][mspec.gpu_arch])
-            mfma_flops_f8 += eval(roof_eq["mfma_flops_f8"][mspec.gpu_arch])
-            mfma_flops_f16 += eval(roof_eq["mfma_flops_f16"][mspec.gpu_arch])
-            mfma_flops_bf16 += eval(roof_eq["mfma_flops_bf16"][mspec.gpu_arch])
-            mfma_flops_f32 += eval(roof_eq["mfma_flops_f32"][mspec.gpu_arch])
-            mfma_flops_f64 += eval(roof_eq["mfma_flops_f64"][mspec.gpu_arch])
-            mfma_iops_i8 += eval(roof_eq["mfma_iops_i8"][mspec.gpu_arch])
-
+            eq = roof_eq["MFMA F6F4 Flops"]["value"]
+            console_debug(eq)
+            if eq is not None and eq != "None":
+                mfma_flops_f6f4 += eval(eq)
+            eq = roof_eq["MFMA F8 Flops"]["value"]
+            console_debug("{}, {}".format(eq, eval(eq)))
+            if eq is not None and eq != "None":
+                mfma_flops_f8 += eval(eq)
+            eq = roof_eq["MFMA F16 Flops"]["value"]
+            if eq is not None and eq != "None":
+                mfma_flops_f16 += eval(eq)
+            eq = roof_eq["MFMA BF16 Flops"]["value"]
+            if eq is not None and eq != "None":
+                mfma_flops_bf16 += eval(eq)
+            eq = roof_eq["MFMA F32 Flops"]["value"]
+            if eq is not None and eq != "None":
+                mfma_flops_f32 += eval(eq)
+            eq = roof_eq["MFMA F64 Flops"]["value"]
+            if eq is not None and eq != "None":
+                mfma_flops_f64 += eval(eq)
+            # eq = roof_eq["MFMA I8 IOPs"]["value"]
+            # if eq is not None and eq != "None": mfma_iops_i8 += eval(eq)
+            console_debug(
+                "{}, {}, {}, {}, {}, {}, {}".format(
+                    mfma_flops_f6f4,
+                    mfma_flops_f8,
+                    mfma_flops_f16,
+                    mfma_flops_bf16,
+                    mfma_flops_f32,
+                    mfma_flops_f64,
+                    mfma_iops_i8,
+                )
+            )
         except KeyError:
             console_debug(
                 "roofline",
@@ -283,9 +309,8 @@ def calc_ai(mspec, sort_type, roof_eq, ret_df):
             pass
 
         try:
-            lds_data += eval(roof_eq["lds_data"][mspec.gpu_arch]) * (
-                mspec.lds_banks_per_cu
-            )
+            eq = roof_eq["LDS Data Cache"]["value"]
+            lds_data += eval(eq)
         except KeyError:
             console_debug(
                 "roofline",
@@ -294,7 +319,8 @@ def calc_ai(mspec, sort_type, roof_eq, ret_df):
             pass
 
         try:
-            L1cache_data += eval(roof_eq["L1cache_data"][mspec.gpu_arch])
+            eq = roof_eq["L1 Data Cache"]["value"]
+            L1cache_data += eval(eq)
         except KeyError:
             console_debug(
                 "roofline",
@@ -303,7 +329,8 @@ def calc_ai(mspec, sort_type, roof_eq, ret_df):
             pass
 
         try:
-            L2cache_data += eval(roof_eq["L2cache_data"][mspec.gpu_arch])
+            eq = roof_eq["L2 Data Cache"]["value"]
+            L2cache_data += eval(eq)
         except KeyError:
             console_debug(
                 "roofline",
@@ -311,7 +338,8 @@ def calc_ai(mspec, sort_type, roof_eq, ret_df):
             )
             pass
         try:
-            hbm_data += eval(roof_eq["hbm_data"][mspec.gpu_arch])
+            eq = roof_eq["HBM Data Cache"]["value"]
+            hbm_data += eval(eq)
         except KeyError:
             console_debug(
                 "roofline",
@@ -456,7 +484,7 @@ def calc_ai(mspec, sort_type, roof_eq, ret_df):
     return intensityPoints
 
 
-def constuct_roof(roofline_parameters, dtype, roof_types):
+def constuct_roof(roofline_parameters, dtype):
     benchmark_results = str(
         Path(roofline_parameters["workload_dir"]).joinpath("roofline.csv")
     )
@@ -497,6 +525,6 @@ def constuct_roof(roofline_parameters, dtype, roof_types):
     # ------------------
     #  Generate Roofline
     # ------------------
-    results = calc_ceilings(roofline_parameters, dtype, roof_types, benchmark_data)
+    results = calc_ceilings(roofline_parameters, dtype, benchmark_data)
 
     return results
