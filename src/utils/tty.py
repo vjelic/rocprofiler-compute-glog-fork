@@ -238,14 +238,15 @@ def show_all(args, runs, archConfigs, output, profiling_config):
                         + str(table_config["id"] % 100)
                     )
 
+                    is_empty_columns_exist = False
                     # Check if any column in df is empty
-                    is_empty_columns_exist = any(
-                        [
-                            df.columns[col_idx]
-                            for col_idx in range(len(df.columns))
-                            if df.replace("", None).iloc[:, col_idx].isnull().all()
-                        ]
-                    )
+                    # is_empty_columns_exist = any(
+                    #     [
+                    #         df.columns[col_idx]
+                    #         for col_idx in range(len(df.columns))
+                    #         if df.replace("", None).iloc[:, col_idx].isnull().all()
+                    #     ]
+                    # )
                     # Do not print the table if any column is empty
                     if is_empty_columns_exist:
                         if "title" in table_config:
