@@ -3,6 +3,7 @@ import sys
 import json
 import re
 import itertools
+import random
 
 # Max counters for each GFX IP block:
 #"SQ": 8
@@ -17,9 +18,9 @@ import itertools
 #"GDS": 4
 
 OUTPUT_FILE='src/rocprof_compute_soc/analysis_configs/gfx942/2300_test.yaml'
-SUBSET_SIZE = 5
+SUBSET_SIZE = 6
 
-max_counts = {
+MAX_COUNTS = {
 "SQ": 8,
 "TA": 2,
 "TD": 2,
@@ -64,6 +65,9 @@ must_have = [
             'VALU Active Threads',
 ]
 
+# For some reason rocprof-compute doesn't accept the output created
+# by the yaml module, so we'll do it manually in the format that
+# works with rocprof-compute
 def write_metrics(metrics, id, title, file_path):
 
     with open(file_path, 'wt') as f:
@@ -134,119 +138,136 @@ def write_pmc(metrics):
 
 metric_files = [
     'src/rocprof_compute_soc/analysis_configs/gfx942/0200_system-speed-of-light.yaml',
-    #'src/rocprof_compute_soc/analysis_configs/gfx942/0300_mem_chart.yaml'
-    #'src/rocprof_compute_soc/analysis_configs/gfx942/0500_command-processor.yaml'
-    #'src/rocprof_compute_soc/analysis_configs/gfx942/0600_shader-processor-input.yaml'
-    #'src/rocprof_compute_soc/analysis_configs/gfx942/1000_compute-unit-instruction-mix.yaml'
-    #'src/rocprof_compute_soc/analysis_configs/gfx942/1100_compute-unit-compute-pipeline.yaml'
-    #'src/rocprof_compute_soc/analysis_configs/gfx942/1200_lds.yaml'
+    'src/rocprof_compute_soc/analysis_configs/gfx942/0300_mem_chart.yaml',
+    'src/rocprof_compute_soc/analysis_configs/gfx942/0500_command-processor.yaml',
+    'src/rocprof_compute_soc/analysis_configs/gfx942/0600_shader-processor-input.yaml',
+    'src/rocprof_compute_soc/analysis_configs/gfx942/1000_compute-unit-instruction-mix.yaml',
+    'src/rocprof_compute_soc/analysis_configs/gfx942/1100_compute-unit-compute-pipeline.yaml',
+    'src/rocprof_compute_soc/analysis_configs/gfx942/1200_lds.yaml'
 ]
 
-metrics = load_metrics(metric_files)
-m_list = []
+def get_available_metrics(to_omit):
+    available_metrics = []
 
-# Convert the metrics dictionary into a list
-# Also determines what counters are required for each metric
-for m in metrics.keys():
-
-    # Some have value some have average
-    if 'value' not in metrics[m]:
-        if 'avg' not in metrics[m]:
-            continue
-        v = metrics[m]['avg']
-    else:
-        v = metrics[m]['value']
-
-    if v == None:
-        continue
-
-    parsed = re.split(r'[!=+\-/*() ]+', v)
-
-    unit = metrics[m]['unit'] if 'unit' in metrics[m] else None
-    peak = metrics[m]['peak'] if 'peak' in metrics[m] else None
-    pop = metrics[m]['pop'] if 'pop' in metrics[m] else None
-
-    counters = []
-    for p in parsed:
-
-        if len(p) == 0:
-            continue
-
-        if p[0] == '$':
-            if p == '$numActiveCUs':
-                counters.append('GRBM_GUI_ACTIVE')
-                counters.append('SQ_BUSY_CU_CYCLES')
-            elif p == '$GRBM_GUI_ACTIVE_PER_XCD':
-                counters.append('GRBM_GUI_ACTIVE')
-            continue
-
-        for block in ip_blocks:
-            if block in p:
-                counters.append(p.strip())
-                break
-
-    # Remove duplicates
-    counters = list(set(counters))
-
-    if len(counters) == 0:
-        continue
- 
-    m_list.append({'name':m, 'counters':counters, 'value':v, 'unit':unit, 'peak':peak, 'pop':pop})
-
-
-
-# Get the metric names
-metric_names = [m['name'] for m in m_list]
-
-# Fiter out the metric names we don't want
-for m in metric_names[:]:
-    if m in to_remove:
-        metric_names.remove(m)
-
-# Remaining names are the metrics we do want
-m_list = [m for m in m_list if m.get('name') in metric_names]
-
-
-# Every combination of 5 metrics
-combinations = itertools.combinations(m_list, SUBSET_SIZE)
-
-
-final_list = []
-count = 0
-for combo in combinations:
-    count += 1
-
-
-    # Reject if it does not have our must-have metrics
-    works = True 
-    for m in must_have:
-        if m not in [c['name'] for c in combo]:
-            works = False
+    metrics = load_metrics(metric_files)
     
-    if not works:
-        continue
+    # Convert the metrics dictionary into a list
+    # Also determines what counters are required for each metric
+    for m in metrics.keys():
 
-    # Collect the counters
-    ctrs = []    
-    for m in combo:
+        # Remove metrics we do not want
+        if m in to_omit:
+            continue
+
+        # Some have value some have average
+        if 'value' not in metrics[m]:
+            if 'avg' not in metrics[m]:
+                continue
+            v = metrics[m]['avg']
+        else:
+            v = metrics[m]['value']
+
+        if v == None:
+            continue
+
+        parsed = re.split(r'[!=+\-/*() ]+', v)
+
+        unit = metrics[m]['unit'] if 'unit' in metrics[m] else None
+        peak = metrics[m]['peak'] if 'peak' in metrics[m] else None
+        pop = metrics[m]['pop'] if 'pop' in metrics[m] else None
+
+        counters = []
+        for p in parsed:
+
+            if len(p) == 0:
+                continue
+
+            if p[0] == '$':
+                if p == '$numActiveCUs':
+                    counters.append('GRBM_GUI_ACTIVE')
+                    counters.append('SQ_BUSY_CU_CYCLES')
+                elif p == '$GRBM_GUI_ACTIVE_PER_XCD':
+                    counters.append('GRBM_GUI_ACTIVE')
+                continue
+
+            for block in ip_blocks:
+                if block in p:
+                    counters.append(p.strip())
+                    break
+
+        # Remove duplicates
+        counters = list(set(counters))
+
+        if len(counters) == 0:
+            continue
+     
+        available_metrics.append({'name':m, 'counters':counters, 'value':v, 'unit':unit, 'peak':peak, 'pop':pop})
+
+    return available_metrics
+
+m_list = get_available_metrics(to_remove)
+print(f'Loaded {len(m_list)} metrics')
+
+
+def get_combos(metrics_list, must_have, subset_size):
+
+    m_copy = metrics_list.copy()
+
+    metrics_must_have = []
+
+    # Remove the metrics we know we want
+    for m in m_copy[:]:
+        if m['name'] in must_have:
+            metrics_must_have.append(m)
+            m_copy.remove(m)
+
+    # Get the number of counters used by our "must have" metrics
+    ctrs = []
+    for m in metrics_must_have:
         ctrs.extend(m['counters'])
-
-    # Remove duplicate counters
+    
     ctrs = list(set(ctrs))
-    counts = get_block_counts(ctrs)
-    
-    # Reject if goes beyond max count
-    works = True
-    for k in counts.keys():
-        if counts[k] > max_counts[k]:
-            works = False
 
-    if not works:
-        continue
-    
-    final_list.append(combo)
+    ctr_counts = get_block_counts(ctrs)
 
-print('Rejectd {}'.format(count - len(final_list)))
+    max_counts_local = MAX_COUNTS.copy()
+    for c in ctr_counts.keys():
+        max_counts_local[c] -= ctr_counts[c]
+
+    combinations = itertools.combinations(m_copy, subset_size - len(must_have))
+
+    final_list = []
+    for combo in combinations:
+
+        # Collect the counters
+        ctrs = []
+        for m in combo:
+            ctrs.extend(m['counters'])
+
+        # Remove duplicate counters
+        ctrs = list(set(ctrs))
+        counts = get_block_counts(ctrs)
+        
+        # Reject if goes beyond max count
+        works = True
+        for k in counts.keys():
+            if counts[k] > max_counts_local[k]:
+                works = False
+
+        if not works:
+            continue
+        
+        final_list.append(list(combo))
+
+    # Add the must-have metrics back in
+    for m in final_list:
+        m.extend(metrics_must_have)
+
+    return final_list
+
+final_list = get_combos(m_list, must_have, SUBSET_SIZE)
+
+#print('Rejectd {}'.format(count - len(final_list)))
 print('Found {} combinations'.format(len(final_list)))
 
 if len(final_list) == 0:
@@ -255,7 +276,7 @@ if len(final_list) == 0:
 
 metrics_dict = {}
 
-metrics = list(final_list[0])
+metrics = list(final_list[random.randint(0, len(final_list))])
 
 for m in metrics:
     name = m['name']
@@ -263,3 +284,4 @@ for m in metrics:
 
 write_metrics(metrics_dict, 23, 'Test Panel', OUTPUT_FILE)
 #write_pmc(metrics)
+
