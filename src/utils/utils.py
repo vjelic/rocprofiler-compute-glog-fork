@@ -691,7 +691,11 @@ def run_prof(
     if new_env:
         # flatten tcc for applicable mi300 input
         f = path(workload_dir + "/out/pmc_1/results_" + fbase + ".csv")
-        xcds = total_xcds(mspec.gpu_model, mspec.compute_partition)
+
+        xcds = mi_gpu_specs.get_num_xcds(
+            mspec.gpu_arch, mspec.gpu_model, mspec.compute_partition
+        )
+
         df = flatten_tcc_info_across_xcds(f, xcds, int(mspec._l2_banks))
         df.to_csv(f, index=False)
 
