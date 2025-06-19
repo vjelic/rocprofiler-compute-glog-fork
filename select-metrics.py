@@ -29,8 +29,23 @@ IP_BLOCKS = {
     "GDS": 4
 }
 
-to_remove = [
-    #  'VALU FLOPs',
+IGNORE = [
+    "2.1.0", # VALU FLOPs
+    "11.1.0",
+    "11.1.1",
+    "11.1.2",
+    "11.1.4",
+    "11.1.5",
+    "11.1.6",
+    "11.1.7",
+    "11.1.8",
+    "11.2.0",
+    "11.2.2",
+    "11.2.6",
+    "11.2.7",
+    "11.2.8",
+
+
     #  'vL1D Cache Hit Rate',
     #  'L1I Hit Rate',
     #  'L1I Fetch Latency',
@@ -40,12 +55,6 @@ to_remove = [
     #  'L2-Fabric Read Latency',
     #  'L2-Fabric Write Latency',
     #  'L1I BW'
-]
-
-MUST_HAVE = [
-    '2.1.9',
-    '2.1.15',
-    '2.1.17',
 ]
 
 # For some reason rocprof-compute doesn't accept the output created
@@ -112,9 +121,13 @@ def load_metrics(counter_files):
                 m = ctrs[c].copy()
                 m['name'] = c
                 id_str = f'{major}.{minor}.{k}'
+                k += 1
+
+                if id_str in IGNORE:
+                    continue
+                
                 counters_dict[id_str] = m
 
-                k += 1
             counter_info.update(counters_dict)
 
     return counter_info
@@ -249,36 +262,15 @@ def get_combos(metrics_list, must_have, subset_size):
 
     return final_list
 
-# def get_names(metrics):
-
-#     id_name_pairs = {}
-#     for m in metrics:
-#         id_name_pairs[m['id']] = f"{m['name']}"
-    
-#     return id_name_pairs
-
-# def print_selection_menu(id_name_pairs):
-
-#     cols = 3
-
-#     ids = list(id_name_pairs.keys())
-
-#     for i in range(0, len(ids), cols):
-#         #row = ids[i:i+cols]
-#         #print("".join(f"{id_name_pairs[id]:<40}" for id in row))
-#         indices = list(range(i, min(i+3, len(ids))))
-#         print("".join(f"{idx+1:<3}. {id_name_pairs[ids[idx]]:<40}" for idx in indices))
-
 def print_selection_menu(metrics):
 
     cols = 3
-
-    names = list(m['name'] for m in metrics)
+    names = list(f"{m['name']}" for m in metrics)
 
     for i in range(0, len(names), cols):
         indices = list(range(i, min(i+3, len(names))))
         print("".join(f"{idx+1:>3}. {names[idx]:<40}" for idx in indices))
-
+    
 def print_counter_usage(metrics):
 
     counters = []
@@ -288,8 +280,6 @@ def print_counter_usage(metrics):
     counters = list(set(counters))
     block_counts = get_block_counts(counters)
 
-    #for b in IP_BLOCKS:
-    #    print(f'{b}: {block_counts[b]}/{IP_BLOCKS[b]}  ','')
     print(''.join(f'{b}: {block_counts[b]}/{IP_BLOCKS[b]}  ' for b in IP_BLOCKS))
 
 def select_metrics(metrics):
@@ -298,14 +288,17 @@ def select_metrics(metrics):
 
     while True:
         print_selection_menu(metrics)
+        print('0. Done')
         print_counter_usage([metrics[id] for id in selected_ids])
+
         idx = int(input("Select: "))
         if idx == 0:
             break
         elif idx > 0:
             selected_ids.add(idx-1)
         else:
-            selected_ids.remove(-idx-1)
+            if -idx-1 in selected_ids:
+                selected_ids.remove(-idx-1)
 
     return [metrics[i]['id'] for i in selected_ids]
 
@@ -340,6 +333,12 @@ def main_interactive():
     write_metrics(dict, 23, 'Test Panel', OUTPUT_FILE)
 
 def main():
+    MUST_HAVE = [
+        '2.1.9',
+        '2.1.15',
+        '2.1.17',
+    ]
+
     metrics = get_available_metrics()
 
     print(f'Loaded {len(metrics)} metrics')
