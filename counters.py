@@ -1,53 +1,36 @@
 import yaml
-import sys
-import json
 import re
 import itertools
 import random
 
-# Max counters for each GFX IP block:
-#"SQ": 8
-#"TA": 2
-#"TD": 2
-#"TCP": 4
-#"TCC": 4
-#"CPC": 2
-#"CPF": 2
-#"SPI": 2
-#"GRBM": 2
-#"GDS": 4
-
 OUTPUT_FILE='src/rocprof_compute_soc/analysis_configs/gfx942/2300_test.yaml'
-SUBSET_SIZE = 6
+SUBSET_SIZE = 5
 
-MAX_COUNTS = {
-"SQ": 8,
-"TA": 2,
-"TD": 2,
-"TCP": 4,
-"TCC": 4,
-"CPC": 2,
-"CPF": 2,
-"SPI": 2,
-"GRBM": 2,
-"GDS": 4
-}
-
-ip_blocks = [
-    "SQ",
-    "TA",
-    "TD",
-    "TCP", 
-    "TCC",
-    "CPC",
-    "CPF",
-    "SPI",
-    "GRBM",
-    "GDS"
+METRIC_FILES = [
+    'src/rocprof_compute_soc/analysis_configs/gfx942/0200_system-speed-of-light.yaml',
+    'src/rocprof_compute_soc/analysis_configs/gfx942/0300_mem_chart.yaml',
+    'src/rocprof_compute_soc/analysis_configs/gfx942/0500_command-processor.yaml',
+    'src/rocprof_compute_soc/analysis_configs/gfx942/0600_shader-processor-input.yaml',
+    'src/rocprof_compute_soc/analysis_configs/gfx942/1000_compute-unit-instruction-mix.yaml',
+    'src/rocprof_compute_soc/analysis_configs/gfx942/1100_compute-unit-compute-pipeline.yaml',
+    'src/rocprof_compute_soc/analysis_configs/gfx942/1200_lds.yaml'
 ]
 
+IP_BLOCKS = {
+    "SQ": 8,
+    "TA": 2,
+    "TD": 2,
+    "TCP": 4,
+    "TCC": 4,
+    "CPC": 2,
+    "CPF": 2,
+    "SPI": 2,
+    "GRBM": 2,
+    "GDS": 4
+}
+
 to_remove = [
-    #'VALU FLOPs',
+    #  'VALU FLOPs',
     #  'vL1D Cache Hit Rate',
     #  'L1I Hit Rate',
     #  'L1I Fetch Latency',
@@ -59,10 +42,10 @@ to_remove = [
     #  'L1I BW'
 ]
 
-must_have = [
-            'Active CUs',
-            'Wavefront Occupancy',
-            'VALU Active Threads',
+MUST_HAVE = [
+    '2.1.9',
+    '2.1.15',
+    '2.1.17',
 ]
 
 # For some reason rocprof-compute doesn't accept the output created
@@ -98,7 +81,7 @@ def write_metrics(metrics, id, title, file_path):
 def init_block_counts():
     block_counts = {}
 
-    for b in ip_blocks:
+    for b in IP_BLOCKS:
         block_counts[b] = 0
     
     return block_counts
@@ -107,7 +90,7 @@ def get_block_counts(counters):
     block_counts = init_block_counts()
 
     for ctr in counters:
-        for b in ip_blocks:
+        for b in IP_BLOCKS:
             if ctr.startswith(b):
                 block_counts[b] += 1
 
@@ -118,7 +101,21 @@ def load_metrics(counter_files):
     for file_path in counter_files: 
         with open(file_path) as f:
             info = yaml.safe_load(f)
-            counter_info.update(info['Panel Config']['data source'][0]['metric_table']['metric'])
+            id = info['Panel Config']['data source'][0]['metric_table']['id']
+            major = id // 100
+            minor = id % 100
+            ctrs = info['Panel Config']['data source'][0]['metric_table']['metric']
+
+            counters_dict = {}
+            k = 0
+            for c in ctrs.keys():
+                m = ctrs[c].copy()
+                m['name'] = c
+                id_str = f'{major}.{minor}.{k}'
+                counters_dict[id_str] = m
+
+                k += 1
+            counter_info.update(counters_dict)
 
     return counter_info
 
@@ -136,45 +133,35 @@ def write_pmc(metrics):
     with open('pmc.txt', 'wt') as r:
         r.write(pmc_str)
 
-metric_files = [
-    'src/rocprof_compute_soc/analysis_configs/gfx942/0200_system-speed-of-light.yaml',
-    'src/rocprof_compute_soc/analysis_configs/gfx942/0300_mem_chart.yaml',
-    'src/rocprof_compute_soc/analysis_configs/gfx942/0500_command-processor.yaml',
-    'src/rocprof_compute_soc/analysis_configs/gfx942/0600_shader-processor-input.yaml',
-    'src/rocprof_compute_soc/analysis_configs/gfx942/1000_compute-unit-instruction-mix.yaml',
-    'src/rocprof_compute_soc/analysis_configs/gfx942/1100_compute-unit-compute-pipeline.yaml',
-    'src/rocprof_compute_soc/analysis_configs/gfx942/1200_lds.yaml'
-]
 
-def get_available_metrics(to_omit):
+
+
+def get_available_metrics():
     available_metrics = []
 
-    metrics = load_metrics(metric_files)
+    metrics = load_metrics(METRIC_FILES)
     
     # Convert the metrics dictionary into a list
     # Also determines what counters are required for each metric
-    for m in metrics.keys():
+    for id in metrics.keys():
 
-        # Remove metrics we do not want
-        if m in to_omit:
-            continue
-
+        name = metrics[id]['name']
         # Some have value some have average
-        if 'value' not in metrics[m]:
-            if 'avg' not in metrics[m]:
+        if 'value' not in metrics[id]:
+            if 'avg' not in metrics[id]:
                 continue
-            v = metrics[m]['avg']
+            v = metrics[id]['avg']
         else:
-            v = metrics[m]['value']
+            v = metrics[id]['value']
 
         if v == None:
             continue
 
         parsed = re.split(r'[!=+\-/*() ]+', v)
 
-        unit = metrics[m]['unit'] if 'unit' in metrics[m] else None
-        peak = metrics[m]['peak'] if 'peak' in metrics[m] else None
-        pop = metrics[m]['pop'] if 'pop' in metrics[m] else None
+        unit = metrics[id]['unit'] if 'unit' in metrics[id] else None
+        peak = metrics[id]['peak'] if 'peak' in metrics[id] else None
+        pop = metrics[id]['pop'] if 'pop' in metrics[id] else None
 
         counters = []
         for p in parsed:
@@ -190,7 +177,7 @@ def get_available_metrics(to_omit):
                     counters.append('GRBM_GUI_ACTIVE')
                 continue
 
-            for block in ip_blocks:
+            for block in IP_BLOCKS:
                 if block in p:
                     counters.append(p.strip())
                     break
@@ -201,12 +188,9 @@ def get_available_metrics(to_omit):
         if len(counters) == 0:
             continue
      
-        available_metrics.append({'name':m, 'counters':counters, 'value':v, 'unit':unit, 'peak':peak, 'pop':pop})
+        available_metrics.append({'id':id, 'name':name, 'counters':counters, 'value':v, 'unit':unit, 'peak':peak, 'pop':pop})
 
     return available_metrics
-
-m_list = get_available_metrics(to_remove)
-print(f'Loaded {len(m_list)} metrics')
 
 
 def get_combos(metrics_list, must_have, subset_size):
@@ -217,7 +201,7 @@ def get_combos(metrics_list, must_have, subset_size):
 
     # Remove the metrics we know we want
     for m in m_copy[:]:
-        if m['name'] in must_have:
+        if m['id'] in must_have:
             metrics_must_have.append(m)
             m_copy.remove(m)
 
@@ -230,7 +214,7 @@ def get_combos(metrics_list, must_have, subset_size):
 
     ctr_counts = get_block_counts(ctrs)
 
-    max_counts_local = MAX_COUNTS.copy()
+    max_counts_local = IP_BLOCKS.copy()
     for c in ctr_counts.keys():
         max_counts_local[c] -= ctr_counts[c]
 
@@ -265,23 +249,119 @@ def get_combos(metrics_list, must_have, subset_size):
 
     return final_list
 
-final_list = get_combos(m_list, must_have, SUBSET_SIZE)
+# def get_names(metrics):
 
-#print('Rejectd {}'.format(count - len(final_list)))
-print('Found {} combinations'.format(len(final_list)))
+#     id_name_pairs = {}
+#     for m in metrics:
+#         id_name_pairs[m['id']] = f"{m['name']}"
+    
+#     return id_name_pairs
 
-if len(final_list) == 0:
-    print('No configurations found')
-    exit(0)
+# def print_selection_menu(id_name_pairs):
 
-metrics_dict = {}
+#     cols = 3
 
-metrics = list(final_list[random.randint(0, len(final_list))])
+#     ids = list(id_name_pairs.keys())
 
-for m in metrics:
-    name = m['name']
-    metrics_dict[name] = {'value':m['value'], 'unit':m['unit'], 'peak':m['peak'], 'pop':None, 'tips':None}
+#     for i in range(0, len(ids), cols):
+#         #row = ids[i:i+cols]
+#         #print("".join(f"{id_name_pairs[id]:<40}" for id in row))
+#         indices = list(range(i, min(i+3, len(ids))))
+#         print("".join(f"{idx+1:<3}. {id_name_pairs[ids[idx]]:<40}" for idx in indices))
 
-write_metrics(metrics_dict, 23, 'Test Panel', OUTPUT_FILE)
-#write_pmc(metrics)
+def print_selection_menu(metrics):
 
+    cols = 3
+
+    names = list(m['name'] for m in metrics)
+
+    for i in range(0, len(names), cols):
+        indices = list(range(i, min(i+3, len(names))))
+        print("".join(f"{idx+1:>3}. {names[idx]:<40}" for idx in indices))
+
+def print_counter_usage(metrics):
+
+    counters = []
+    for m in metrics:
+        counters.extend(m['counters'])
+    
+    counters = list(set(counters))
+    block_counts = get_block_counts(counters)
+
+    #for b in IP_BLOCKS:
+    #    print(f'{b}: {block_counts[b]}/{IP_BLOCKS[b]}  ','')
+    print(''.join(f'{b}: {block_counts[b]}/{IP_BLOCKS[b]}  ' for b in IP_BLOCKS))
+
+def select_metrics(metrics):
+
+    selected_ids = set()
+
+    while True:
+        print_selection_menu(metrics)
+        print_counter_usage([metrics[id] for id in selected_ids])
+        idx = int(input("Select: "))
+        if idx == 0:
+            break
+        elif idx > 0:
+            selected_ids.add(idx-1)
+        else:
+            selected_ids.remove(-idx-1)
+
+    return [metrics[i]['id'] for i in selected_ids]
+
+def main_interactive():
+    metrics = get_available_metrics()
+
+    selected = select_metrics(metrics)
+
+    print('Selected {}'.format(selected))
+
+    combos = get_combos(metrics, selected, SUBSET_SIZE)
+
+    print('Found {} combinations'.format(len(combos)))
+
+    if len(combos) == 0:
+        print('No configurations found')
+        exit(0)
+
+    # Select random subset
+    selected = list(combos[random.randint(0, len(combos))])
+
+    print('Random selection:')    
+    for m in selected:
+        print(f"{m['id']} {m['name']}")
+ 
+    dict = {}
+    for m in selected:
+        name = m['name']
+        dict[name] = {'value':m['value'], 'unit':m['unit'], 'peak':m['peak'], 'pop':None, 'tips':None}
+
+    # Write to file
+    write_metrics(dict, 23, 'Test Panel', OUTPUT_FILE)
+
+def main():
+    metrics = get_available_metrics()
+
+    print(f'Loaded {len(metrics)} metrics')
+
+    combos = get_combos(metrics, MUST_HAVE, SUBSET_SIZE)
+
+    print('Found {} combinations'.format(len(combos)))
+
+    if len(combos) == 0:
+        print('No configurations found')
+        exit(0)
+
+    # Select random subset
+    selected = list(combos[random.randint(0, len(combos))])
+    dict = {}
+    for m in selected:
+        name = m['name']
+        dict[name] = {'value':m['value'], 'unit':m['unit'], 'peak':m['peak'], 'pop':None, 'tips':None}
+
+    # Write to file
+    write_metrics(dict, 23, 'Test Panel', OUTPUT_FILE)
+
+if __name__ == "__main__":
+    #main()
+    main_interactive()
