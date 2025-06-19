@@ -110,25 +110,29 @@ def load_metrics(counter_files):
     for file_path in counter_files: 
         with open(file_path) as f:
             info = yaml.safe_load(f)
-            id = info['Panel Config']['data source'][0]['metric_table']['id']
-            major = id // 100
-            minor = id % 100
-            ctrs = info['Panel Config']['data source'][0]['metric_table']['metric']
 
-            counters_dict = {}
-            k = 0
-            for c in ctrs.keys():
-                m = ctrs[c].copy()
-                m['name'] = c
-                id_str = f'{major}.{minor}.{k}'
-                k += 1
+            sources = info['Panel Config']['data source']
 
-                if id_str in IGNORE:
-                    continue
-                
-                counters_dict[id_str] = m
+            for source in sources:
+                id = source['metric_table']['id']
+                major = id // 100
+                minor = id % 100
+                ctrs = source['metric_table']['metric']
 
-            counter_info.update(counters_dict)
+                counters_dict = {}
+                k = 0
+                for c in ctrs.keys():
+                    m = ctrs[c].copy()
+                    m['name'] = c
+                    id_str = f'{major}.{minor}.{k}'
+                    k += 1
+
+                    if id_str in IGNORE:
+                        continue
+                    
+                    counters_dict[id_str] = m
+
+                counter_info.update(counters_dict)
 
     return counter_info
 
