@@ -38,6 +38,7 @@ import time
 from collections import OrderedDict
 from itertools import product
 from pathlib import Path as path
+from utils.mi_gpu_spec import mi_gpu_specs
 
 import pandas as pd
 
