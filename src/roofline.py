@@ -89,7 +89,7 @@ class Roofline:
         # Set roofline run parameters from args
         if hasattr(self.__args, "path") and not run_parameters:
             self.__run_parameters["workload_dir"] = self.__args.path
-        if not hasattr(self.__args, "no_roof") and not self.__args.no_roof == True:
+        if hasattr(self.__args, "no_roof") and self.__args.no_roof == False:
             self.__run_parameters["is_standalone"] = True
         if hasattr(self.__args, "kernel_names") and self.__args.kernel_names:
             self.__run_parameters["include_kernel_names"] = True
