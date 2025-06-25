@@ -28,8 +28,10 @@ import config
 from rocprof_compute_soc.soc_base import OmniSoC_Base
 from roofline import Roofline
 from utils.logger import console_error, console_log, console_warning, demarcate
-from utils.mi_gpu_spec import mi_gpu_specs
+import utils.mi_gpu_spec
 from utils.utils import mibench
+
+mi_gpu_specs = utils.mi_gpu_spec.MIGPUSpecs()
 
 
 class gfx942_soc(OmniSoC_Base):

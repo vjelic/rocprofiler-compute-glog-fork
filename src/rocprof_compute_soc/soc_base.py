@@ -34,7 +34,11 @@ from pathlib import Path
 import numpy as np
 
 from rocprof_compute_base import MI300_CHIP_IDS, SUPPORTED_ARCHS
-from utils.utils import console_debug, console_error, console_log, demarcate
+from utils.logger import console_log, console_debug, console_warning, console_error
+from utils.utils import demarcate
+import utils.mi_gpu_spec
+
+mi_gpu_specs = utils.mi_gpu_spec.MIGPUSpecs()
 
 
 class OmniSoC_Base:
@@ -99,7 +103,8 @@ class OmniSoC_Base:
 
     @demarcate
     def populate_mspec(self):
-        from utils.specs import run, search, total_sqc, total_xcds
+        from utils.specs import run, search, total_sqc
+        from utils.utils import total_xcds
 
         if not hasattr(self._mspec, "_rocminfo") or self._mspec._rocminfo is None:
             return
@@ -182,7 +187,7 @@ class OmniSoC_Base:
         self._mspec.gpu_series = mi_gpu_specs.get_gpu_series(self._mspec.gpu_arch)
         # specify gpu model name for gfx942 hardware
         self._mspec.gpu_model = mi_gpu_specs.get_gpu_model(
-            self._mspec.gpu_arch, self._mspec.gpu_chip_id
+            self._mspec.gpu_arch, self._mspec.chip_id
         )
 
         if not self._mspec.gpu_model:
@@ -656,9 +661,6 @@ def perfmon_coalesce(pmc_files_list, perfmon_config, workload_dir, spatial_multi
                     for ctr in f.blocks[block_name].elements:
                         if "_expand" in ctr:
                             channel_counters.append(ctr.split("_expand")[0])
-                    for i in range(0, perfmon_config["TCC_channels"]):
-                        for c in channel_counters:
-                            pmc.append("{}[{}]".format(c, i))
                     # Handle the rest of the TCC counters
                     for ctr in f.blocks[block_name].elements:
                         if "_expand" not in ctr:

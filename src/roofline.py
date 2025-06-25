@@ -38,10 +38,8 @@ from utils.roofline_calc import (
     calc_ai,
     constuct_roof,
 )
+from utils.logger import console_log, console_debug, console_warning
 from utils.utils import (
-    console_debug,
-    console_error,
-    console_log,
     demarcate,
     gen_sysinfo,
     mibench,

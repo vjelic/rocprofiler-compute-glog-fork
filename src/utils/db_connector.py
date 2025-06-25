@@ -32,11 +32,8 @@ from pymongo import MongoClient
 from tqdm import tqdm
 
 from utils.kernel_name_shortener import kernel_name_shortener
+from utils.logger import console_log, console_debug, console_warning, console_error
 from utils.utils import (
-    console_debug,
-    console_error,
-    console_log,
-    console_warning,
     demarcate,
     is_workload_empty,
 )

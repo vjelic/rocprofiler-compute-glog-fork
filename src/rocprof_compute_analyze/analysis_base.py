@@ -30,10 +30,8 @@ from collections import OrderedDict
 from pathlib import Path
 
 from utils import file_io, parser, schema
+from utils.logger import console_log, console_debug, console_warning, console_error
 from utils.utils import (
-    console_debug,
-    console_error,
-    console_log,
     demarcate,
     is_workload_empty,
 )

@@ -38,9 +38,11 @@ import pandas as pd
 
 import config
 from utils.logger import console_debug, console_error, console_log, console_warning
-from utils.mi_gpu_spec import mi_gpu_specs
+import utils.mi_gpu_spec
 from utils.tty import get_table_string
 from utils.utils import get_version
+
+mi_gpu_specs = utils.mi_gpu_spec.MIGPUSpecs()
 
 VERSION_LOC = [
     "version",
@@ -212,7 +214,7 @@ def generate_machine_specs(args, sysinfo: dict = None):
     soc_class = getattr(soc_module, specs.gpu_arch + "_soc")
     soc_obj = soc_class(args, specs)
     # Update arch specific specs
-    specs.gpu_model = mi_gpu_specs.get_gpu_model(specs.gpu_arch, specs.gpu_chip_id)
+    specs.gpu_model = mi_gpu_specs.get_gpu_model(specs.gpu_arch, specs.chip_id)
     specs.num_xcd = mi_gpu_specs.get_num_xcds(
         specs.gpu_arch, specs.gpu_model, specs.compute_partition
     )

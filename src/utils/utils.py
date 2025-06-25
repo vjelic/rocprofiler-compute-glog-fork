@@ -38,7 +38,8 @@ import time
 from collections import OrderedDict
 from itertools import product
 from pathlib import Path as path
-from utils.mi_gpu_spec import mi_gpu_specs
+import utils.mi_gpu_spec
+from utils.logger import console_log, console_debug, console_warning, console_error
 
 import pandas as pd
 
@@ -46,6 +47,8 @@ import config
 
 rocprof_cmd = ""
 rocprof_args = ""
+
+mi_gpu_specs = utils.mi_gpu_spec.MIGPUSpecs()
 
 
 def is_tcc_channel_counter(counter):
@@ -68,40 +71,6 @@ def demarcate(function):
         return result
 
     return wrap_function
-
-
-def console_error(*argv, exit=True):
-    if len(argv) > 1:
-        logging.error(f"[{argv[0]}] {argv[1]}")
-    else:
-        logging.error(f"{argv[0]}")
-    if exit:
-        sys.exit(1)
-
-
-def console_log(*argv, indent_level=0):
-    indent = ""
-    if indent_level >= 1:
-        indent = " " * 3 * indent_level + "|-> "  # spaces per indent level
-
-    if len(argv) > 1:
-        logging.info(indent + f"[{argv[0]}] {argv[1]}")
-    else:
-        logging.info(indent + f"{argv[0]}")
-
-
-def console_debug(*argv):
-    if len(argv) > 1:
-        logging.debug(f"[{argv[0]}] {argv[1]}")
-    else:
-        logging.debug(f"{argv[0]}")
-
-
-def console_warning(*argv):
-    if len(argv) > 1:
-        logging.warning(f"[{argv[0]}] {argv[1]}")
-    else:
-        logging.warning(f"{argv[0]}")
 
 
 def trace_logger(message, *args, **kwargs):
