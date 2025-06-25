@@ -28,7 +28,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from utils.logger import console_log, console_debug, console_warning, console_error
+from utils.logger import console_debug, console_error, console_log, console_warning
 
 cache = dict()
 

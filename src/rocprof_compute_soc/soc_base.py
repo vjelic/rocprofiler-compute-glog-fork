@@ -33,10 +33,10 @@ from pathlib import Path
 
 import numpy as np
 
-from rocprof_compute_base import MI300_CHIP_IDS, SUPPORTED_ARCHS
-from utils.logger import console_log, console_debug, console_warning, console_error
-from utils.utils import demarcate
 import utils.mi_gpu_spec
+from rocprof_compute_base import MI300_CHIP_IDS, SUPPORTED_ARCHS
+from utils.logger import console_debug, console_error, console_log, console_warning
+from utils.utils import demarcate
 
 mi_gpu_specs = utils.mi_gpu_spec.MIGPUSpecs()
 

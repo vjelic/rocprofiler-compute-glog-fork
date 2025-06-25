@@ -38,12 +38,14 @@ import config
 from argparser import omniarg_parser
 from utils.file_io import find_1st_sub_dir, load_sys_info
 from utils.logger import (
+    console_debug,
+    console_log,
+    console_warning,
     setup_console_handler,
     setup_file_handler,
     setup_logging_priority,
 )
 from utils.specs import MachineSpecs, generate_machine_specs
-from utils.logger import console_log, console_debug, console_warning
 from utils.utils import (
     demarcate,
     detect_rocprof,

@@ -26,7 +26,7 @@ import csv
 from dataclasses import dataclass
 from pathlib import Path
 
-from utils.logger import console_log, console_debug, console_warning, console_error
+from utils.logger import console_debug, console_error, console_log, console_warning
 
 ################################################
 # Global vars

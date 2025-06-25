@@ -36,7 +36,7 @@ import pandas as pd
 from tqdm import tqdm
 
 import config
-from utils.logger import console_log, console_debug, console_warning, console_error
+from utils.logger import console_debug, console_error, console_log, console_warning
 from utils.utils import (
     capture_subprocess_output,
     demarcate,

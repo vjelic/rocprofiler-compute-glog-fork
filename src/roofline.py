@@ -31,6 +31,7 @@ import numpy as np
 import plotly.graph_objects as go
 from dash import dcc, html
 
+from utils.logger import console_debug, console_log, console_warning
 from utils.roofline_calc import (
     MFMA_DATATYPES,
     PEAK_OPS_DATATYPES,
@@ -38,7 +39,6 @@ from utils.roofline_calc import (
     calc_ai,
     constuct_roof,
 )
-from utils.logger import console_log, console_debug, console_warning
 from utils.utils import (
     demarcate,
     gen_sysinfo,

@@ -38,12 +38,12 @@ import time
 from collections import OrderedDict
 from itertools import product
 from pathlib import Path as path
-import utils.mi_gpu_spec
-from utils.logger import console_log, console_debug, console_warning, console_error
 
 import pandas as pd
 
 import config
+import utils.mi_gpu_spec
+from utils.logger import console_debug, console_error, console_log, console_warning
 
 rocprof_cmd = ""
 rocprof_args = ""

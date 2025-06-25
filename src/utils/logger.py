@@ -41,6 +41,7 @@ COLORS = {
     "TRACE": MAGENTA,
 }
 
+
 def demarcate(function):
     def wrap_function(*args, **kwargs):
         logging.trace("----- [entering function] -> %s()" % (function.__qualname__))
@@ -77,13 +78,12 @@ def console_debug(*argv):
     else:
         logging.debug(f"{argv[0]}")
 
+
 def console_warning(*argv):
     if len(argv) > 1:
         logging.warning(f"[{argv[0]}] {argv[1]}")
     else:
         logging.warning(f"{argv[0]}")
-
-
 
 
 # Define the formatter
@@ -119,6 +119,7 @@ class PlainFormatter(logging.Formatter):
 
 def trace_logger(message, *args, **kwargs):
     logging.log(logging.TRACE, message, *args, **kwargs)
+
 
 # Setup console handler - provided as separate function to be called
 # prior to argument parsing

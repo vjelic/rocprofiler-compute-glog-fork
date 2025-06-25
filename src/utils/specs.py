@@ -37,8 +37,8 @@ from pathlib import Path as path
 import pandas as pd
 
 import config
-from utils.logger import console_debug, console_error, console_log, console_warning
 import utils.mi_gpu_spec
+from utils.logger import console_debug, console_error, console_log, console_warning
 from utils.tty import get_table_string
 from utils.utils import get_version
 
