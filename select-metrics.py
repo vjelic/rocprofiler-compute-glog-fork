@@ -31,20 +31,38 @@ IP_BLOCKS = {
 }
 
 IGNORE = [
-    "2.1.0", # VALU FLOPs
-    "11.1.0",
-    "11.1.1",
-    "11.1.2",
-    "11.1.4",
-    "11.1.5",
-    "11.1.6",
-    "11.1.7",
-    "11.1.8",
-    "11.2.0",
-    "11.2.2",
-    "11.2.6",
-    "11.2.7",
-    "11.2.8",
+    "2.1.0", # VALU FLOPs (uses >8 SQ counters)
+
+    # Duplicates:
+    "11.1.0", # VALU FLOPs
+	"11.1.1", # VALU IOPs
+	"11.1.2", # MFMA FLOPs (F8)
+	"11.1.3", # MFMA FLOPs (BF16)
+	"11.1.4", # MFMA FLOPs (F16)
+	"11.1.5", # MFMA FLOPs (F32)
+    "11.1.6", # MFMA FLOPs (F64)
+    "11.1.7", # MFMA FLOPs (F6F4)
+	"11.1.8", # MFMA IOPs (INT8)
+    "11.2.0", # IPC
+    "11.2.2", # SALU Utilization 
+	"11.2.3", # VALU Utilization 
+    "11.2.4", # VALU Co-Issue Efficiency 
+    "11.2.5", # VMEM Utilization 
+	"11.2.6", # Branch Utilization
+	"11.2.7", # VALU Active Threads
+	"11.2.8", # MFMA Utilization
+	"11.2.9", # MFMA Instr Cycles
+    "11.3.2", # F8 OPs
+	"11.3.3", # F16 OPs
+	"11.3.4", # BF16 OPs
+	"11.3.5", # F32 OPs
+	"11.3.6", # F64 OPs
+	"11.3.7", # F6F4 OPs
+	"11.3.8", # INT8 OPs
+    "12.1.2", # Theoretical Bandwidth (% of Peak)
+    "12.1.3", # Bank Conflict Rate
+    "12.2.7", # Theoretical Bandwidth
+    "12.2.9", # Bank Conflicts/Access
 ]
 
 # For some reason rocprof-compute doesn't accept the output created
