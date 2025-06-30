@@ -2,6 +2,7 @@ import yaml
 import re
 import itertools
 import random
+from collections import defaultdict
 
 OUTPUT_FILE='src/rocprof_compute_soc/analysis_configs/gfx942/2300_test.yaml'
 SUBSET_SIZE = 5
@@ -44,17 +45,6 @@ IGNORE = [
     "11.2.6",
     "11.2.7",
     "11.2.8",
-
-
-    #  'vL1D Cache Hit Rate',
-    #  'L1I Hit Rate',
-    #  'L1I Fetch Latency',
-    #  'Branch Utilization',
-    #  'Theoretical LDS Bandwidth',
-    #  'sL1D Cache BW',
-    #  'L2-Fabric Read Latency',
-    #  'L2-Fabric Write Latency',
-    #  'L1I BW'
 ]
 
 # For some reason rocprof-compute doesn't accept the output created
@@ -62,30 +52,39 @@ IGNORE = [
 # works with rocprof-compute
 def write_metrics(metrics, id, title, file_path):
 
+    # Bucket metrics according to their headers
+    buckets = defaultdict(list)
+    for m in metrics.keys():
+        key = tuple(sorted(metrics[m]['header']))
+        buckets[key].append(metrics[m])
+
     with open(file_path, 'wt') as f:
         print('Panel Config:', file=f)
         print(f'  id: {id * 100}', file=f)
         print(f"  title: {title}", file=f)
         print('  data source:', file=f)
-        print('    - metric_table:', file=f)
-        print(f'        id: {id * 100 + 1}', file=f)
-        print('        title: panel-test', file=f)
-        print('        header:', file=f)
-        print('          metric: Metric', file=f)
-        print('          value: Avg', file=f)
-        print('          unit: Unit', file=f)
-        print('          peak: Peak', file=f)
-        print('          pop: Pct of Peak', file=f)
-        print('          tips: Tips', file=f)
-        print('        metric:', file=f)
-        for k in metrics.keys():
-            m = metrics[k]
-            print(f"          {k}:", file=f)
-            print(f"            value: {m['value']}", file=f)
-            print(f"            unit: {m['unit']}", file=f)
-            print(f"            peak: {m['peak']}", file=f)
-            print(f"            pop: {m['pop']}", file=f)
-            print(f'            tips:', file=f)
+
+        n = 1
+        for k in buckets:
+            
+            # All metrics in bucket have same header
+            header = buckets[k][0]['header']
+            print('    - metric_table:', file=f)
+            print(f'        id: {id * 100 + n}', file=f)
+            print('        title: panel-test', file=f)
+            print('        header:', file=f)
+            for h in header:
+                print(f'          {h}: {header[h]}', file=f)
+            print('        metric:', file=f)
+            for m in buckets[k]:
+                print(m)
+                print(f"          {m['name']}:", file=f)
+                for h in k:
+                    if h == 'metric':
+                        continue
+                    print(f"            {h}: {m[h]}", file=f)
+
+            n += 1
 
 def init_block_counts():
     block_counts = {}
@@ -112,18 +111,19 @@ def load_metrics(counter_files):
             info = yaml.safe_load(f)
 
             sources = info['Panel Config']['data source']
-
             for source in sources:
                 id = source['metric_table']['id']
                 major = id // 100
                 minor = id % 100
                 ctrs = source['metric_table']['metric']
+                header = source['metric_table']['header']
 
                 counters_dict = {}
                 k = 0
                 for c in ctrs.keys():
                     m = ctrs[c].copy()
                     m['name'] = c
+                    m['header'] = header
                     id_str = f'{major}.{minor}.{k}'
                     k += 1
 
@@ -163,22 +163,27 @@ def get_available_metrics():
     for id in metrics.keys():
 
         name = metrics[id]['name']
-        # Some have value some have average
-        if 'value' not in metrics[id]:
-            if 'avg' not in metrics[id]:
-                continue
-            v = metrics[id]['avg']
-        else:
-            v = metrics[id]['value']
 
-        if v == None:
-            continue
-
-        parsed = re.split(r'[!=+\-/*() ]+', v)
-
+        value = metrics[id]['value'] if 'value' in metrics[id] else None
+        avg = metrics[id]['avg'] if 'avg' in metrics[id] else None
+        maximum = metrics[id]['max'] if 'max' in metrics[id] else None
+        minimum = metrics[id]['min'] if 'min' in metrics[id] else None
         unit = metrics[id]['unit'] if 'unit' in metrics[id] else None
         peak = metrics[id]['peak'] if 'peak' in metrics[id] else None
         pop = metrics[id]['pop'] if 'pop' in metrics[id] else None
+        
+        header = metrics[id]['header']
+
+        # Parse out the counter names
+        if value != None:
+            v = value
+        elif avg != None:
+            v = avg 
+        else:
+            print('Skipping {} {}'.format(id, name))
+            continue
+ 
+        parsed = re.split(r'[!=+\-/*() ]+', v)
 
         counters = []
         for p in parsed:
@@ -205,7 +210,17 @@ def get_available_metrics():
         if len(counters) == 0:
             continue
      
-        available_metrics.append({'id':id, 'name':name, 'counters':counters, 'value':v, 'unit':unit, 'peak':peak, 'pop':pop})
+        available_metrics.append({'id':id,
+                                  'name':name,
+                                  'counters':counters,
+                                  'header':header,
+                                  'value':value,
+                                  'avg':avg,
+                                  'unit':unit,
+                                  'peak':peak,
+                                  'pop':pop,
+                                  'max':maximum,
+                                  'min':minimum})
 
     return available_metrics
 
@@ -292,6 +307,11 @@ def select_metrics(metrics):
 
     while True:
         print_selection_menu(metrics)
+        if len(selected_ids) > 0:
+            print('Current selection: ')
+            for id in selected_ids:
+                print(f"  {metrics[id]['name']}")
+
         print('0. Done')
         print_counter_usage([metrics[id] for id in selected_ids])
 
@@ -331,7 +351,17 @@ def main_interactive():
     dict = {}
     for m in selected:
         name = m['name']
-        dict[name] = {'value':m['value'], 'unit':m['unit'], 'peak':m['peak'], 'pop':None, 'tips':None}
+        dict[name] = {'name':name,
+                      'id':m['id'],
+                      'value':m['value'],
+                      'avg':m['avg'],
+                      'header':m['header'],
+                      'unit':m['unit'],
+                      'peak':m['peak'],
+                      'pop':None,
+                      'tips':None,
+                      'max':m['max'],
+                      'min':m['min']}
 
     # Write to file
     write_metrics(dict, 23, 'Test Panel', OUTPUT_FILE)
@@ -360,7 +390,16 @@ def main():
     dict = {}
     for m in selected:
         name = m['name']
-        dict[name] = {'value':m['value'], 'unit':m['unit'], 'peak':m['peak'], 'pop':None, 'tips':None}
+        dict[name] = {'name':name,
+                      'id':m['id'],
+                      'value':m['value'],
+                      'avg':m['avg'],
+                      'unit':m['unit'],
+                      'peak':m['peak'],
+                      'pop':None,
+                      'tips':None,
+                      'max':m['max'],
+                      'min':m['min']}
 
     # Write to file
     write_metrics(dict, 23, 'Test Panel', OUTPUT_FILE)
