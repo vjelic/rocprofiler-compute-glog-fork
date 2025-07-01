@@ -16,7 +16,12 @@
 - [ ] Other (please specify)
 
 ## Technical Details
-<!-- Please explain the changes. -->
+<!-- Please explain the changes:
+technical details, functional changes, expected outputs, etc. -->
+
+<!-- Please describe testing performed:
+system configuration, manual testing commands, ctest, etc. -->
+
 
 ## Have you added or updated tests to validate functionality?
 
