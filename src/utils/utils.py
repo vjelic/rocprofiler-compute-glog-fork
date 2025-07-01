@@ -38,6 +38,7 @@ import time
 from collections import OrderedDict
 from itertools import product
 from pathlib import Path as path
+from typing import Optional
 
 import pandas as pd
 
@@ -152,7 +153,7 @@ def add_counter_extra_config_input_yaml(
 
 def extract_counter_info_extra_config_input_yaml(
     data: dict, counter_name: str
-) -> dict | None:
+) -> Optional[dict]:
     """
     Extract the full counter dictionary from 'data' for the given counter_name.
 
@@ -161,7 +162,7 @@ def extract_counter_info_extra_config_input_yaml(
         counter_name (str): The counter to find.
 
     Returns:
-        dict | None: The full counter dict if found, else None.
+        Optional[dict]: The full counter dict if found, else None.
     """
     counters = data.get("rocprofiler-sdk", {}).get("counters", [])
     for counter in counters:
@@ -1553,6 +1554,7 @@ def convert_metric_id_to_panel_idx(metric_id):
     else:
         raise Exception(f"Invalid metric id: {metric_id}")
 
+
 def format_time(seconds):
     hours = int(seconds // 3600)
     minutes = int((seconds % 3600) // 60)
@@ -1564,4 +1566,4 @@ def format_time(seconds):
         parts.append(f"{minutes} minute{'s' if minutes != 1 else ''}")
     if secs > 0 or not parts:
         parts.append(f"{secs} second{'s' if secs != 1 else ''}")
-    return ', '.join(parts[:-1]) + (' and ' if len(parts) > 1 else '') + parts[-1]
+    return ", ".join(parts[:-1]) + (" and " if len(parts) > 1 else "") + parts[-1]
