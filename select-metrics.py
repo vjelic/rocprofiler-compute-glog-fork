@@ -95,12 +95,11 @@ def write_metrics(metrics, id, title, file_path):
                 print(f'          {h}: {header[h]}', file=f)
             print('        metric:', file=f)
             for m in buckets[k]:
-                print(m)
                 print(f"          {m['name']}:", file=f)
                 for h in k:
                     if h == 'metric':
                         continue
-                    print(f"            {h}: {m[h]}", file=f)
+                    print(f"            {h}: {m['values'][h]}", file=f)
 
             n += 1
 
@@ -123,7 +122,7 @@ def get_block_counts(counters):
     return block_counts
 
 def load_metrics(counter_files):
-    counter_info = {}
+    metrics_info = {}
     for file_path in counter_files: 
         with open(file_path) as f:
             info = yaml.safe_load(f)
@@ -133,26 +132,29 @@ def load_metrics(counter_files):
                 id = source['metric_table']['id']
                 major = id // 100
                 minor = id % 100
-                ctrs = source['metric_table']['metric']
+                title = source['metric_table']['title']
+                metrics = source['metric_table']['metric']
                 header = source['metric_table']['header']
 
-                counters_dict = {}
+                metrics_dict = {}
                 k = 0
-                for c in ctrs.keys():
-                    m = ctrs[c].copy()
-                    m['name'] = c
+                for metric_name in metrics.keys():
+                    m = metrics[metric_name].copy()
+                    m['name'] = metric_name
+                    m['title'] = title
                     m['header'] = header
                     id_str = f'{major}.{minor}.{k}'
+                    m['id'] = id_str
                     k += 1
 
                     if id_str in IGNORE:
                         continue
                     
-                    counters_dict[id_str] = m
+                    metrics_dict[id_str] = m
 
-                counter_info.update(counters_dict)
+                metrics_info.update(metrics_dict)
 
-    return counter_info
+    return metrics_info
 
 def write_pmc(metrics):
     counters = []
@@ -169,7 +171,74 @@ def write_pmc(metrics):
         r.write(pmc_str)
 
 
+def parse_metric(metric):
+    name = metric['name']
+    id = metric['id']
+    title = metric['title']
 
+    value = metric['value'] if 'value' in metric else None
+    avg = metric['avg'] if 'avg' in metric else None
+    maximum = metric['max'] if 'max' in metric else None
+    minimum = metric['min'] if 'min' in metric else None
+    unit = metric['unit'] if 'unit' in metric else None
+    peak = metric['peak'] if 'peak' in metric else None
+    pop = metric['pop'] if 'pop' in metric else None
+    tips = metric['tips'] if 'tips' in metric else None
+    header = metric['header']
+
+    # Parse out the counter names
+    if value != None:
+        v = value
+    elif avg != None:
+        v = avg 
+    else:
+        print('Skipping {} {}'.format(id, name))
+        return None
+
+    parsed = re.split(r'[!=+\-/*() ]+', v)
+
+    counters = []
+    for p in parsed:
+
+        if len(p) == 0:
+            continue
+
+        if p[0] == '$':
+            if p == '$numActiveCUs':
+                counters.append('GRBM_GUI_ACTIVE')
+                counters.append('SQ_BUSY_CU_CYCLES')
+            elif p == '$GRBM_GUI_ACTIVE_PER_XCD':
+                counters.append('GRBM_GUI_ACTIVE')
+            continue
+
+        for block in IP_BLOCKS:
+            if block in p:
+                counters.append(p.strip())
+                break
+
+    # Remove duplicates
+    counters = list(set(counters))
+
+    if len(counters) == 0:
+        return None
+ 
+    return {
+          'id':id,
+          'name':name,
+          'counters':counters,
+          'header':header,
+          'title':title,
+          'values':{
+              'value':value,
+              'avg':avg,
+              'unit':unit,
+              'peak':peak,
+              'pop':pop,
+              'max':maximum,
+              'min':minimum,
+              'tips':tips
+              }
+            }
 
 def get_available_metrics():
     available_metrics = []
@@ -179,66 +248,9 @@ def get_available_metrics():
     # Convert the metrics dictionary into a list
     # Also determines what counters are required for each metric
     for id in metrics.keys():
-
-        name = metrics[id]['name']
-
-        value = metrics[id]['value'] if 'value' in metrics[id] else None
-        avg = metrics[id]['avg'] if 'avg' in metrics[id] else None
-        maximum = metrics[id]['max'] if 'max' in metrics[id] else None
-        minimum = metrics[id]['min'] if 'min' in metrics[id] else None
-        unit = metrics[id]['unit'] if 'unit' in metrics[id] else None
-        peak = metrics[id]['peak'] if 'peak' in metrics[id] else None
-        pop = metrics[id]['pop'] if 'pop' in metrics[id] else None
-        
-        header = metrics[id]['header']
-
-        # Parse out the counter names
-        if value != None:
-            v = value
-        elif avg != None:
-            v = avg 
-        else:
-            print('Skipping {} {}'.format(id, name))
-            continue
- 
-        parsed = re.split(r'[!=+\-/*() ]+', v)
-
-        counters = []
-        for p in parsed:
-
-            if len(p) == 0:
-                continue
-
-            if p[0] == '$':
-                if p == '$numActiveCUs':
-                    counters.append('GRBM_GUI_ACTIVE')
-                    counters.append('SQ_BUSY_CU_CYCLES')
-                elif p == '$GRBM_GUI_ACTIVE_PER_XCD':
-                    counters.append('GRBM_GUI_ACTIVE')
-                continue
-
-            for block in IP_BLOCKS:
-                if block in p:
-                    counters.append(p.strip())
-                    break
-
-        # Remove duplicates
-        counters = list(set(counters))
-
-        if len(counters) == 0:
-            continue
-     
-        available_metrics.append({'id':id,
-                                  'name':name,
-                                  'counters':counters,
-                                  'header':header,
-                                  'value':value,
-                                  'avg':avg,
-                                  'unit':unit,
-                                  'peak':peak,
-                                  'pop':pop,
-                                  'max':maximum,
-                                  'min':minimum})
+        parsed = parse_metric(metrics[id])
+        if parsed != None:
+            available_metrics.append(parsed) 
 
     return available_metrics
 
@@ -362,7 +374,7 @@ def main_interactive():
     # Select random subset
     selected = list(combos[random.randint(0, len(combos))])
 
-    print('Random selection:')    
+    print('Random selection:')
     for m in selected:
         print(f"{m['id']} {m['name']}")
  
@@ -371,57 +383,14 @@ def main_interactive():
         name = m['name']
         dict[name] = {'name':name,
                       'id':m['id'],
-                      'value':m['value'],
-                      'avg':m['avg'],
+                      'counters':m['counters'],
+                      'title':m['title'],
                       'header':m['header'],
-                      'unit':m['unit'],
-                      'peak':m['peak'],
-                      'pop':None,
-                      'tips':None,
-                      'max':m['max'],
-                      'min':m['min']}
-
-    # Write to file
-    write_metrics(dict, 23, 'Test Panel', OUTPUT_FILE)
-
-def main():
-    MUST_HAVE = [
-        '2.1.9',
-        '2.1.15',
-        '2.1.17',
-    ]
-
-    metrics = get_available_metrics()
-
-    print(f'Loaded {len(metrics)} metrics')
-
-    combos = get_combos(metrics, MUST_HAVE, SUBSET_SIZE)
-
-    print('Found {} combinations'.format(len(combos)))
-
-    if len(combos) == 0:
-        print('No configurations found')
-        exit(0)
-
-    # Select random subset
-    selected = list(combos[random.randint(0, len(combos))])
-    dict = {}
-    for m in selected:
-        name = m['name']
-        dict[name] = {'name':name,
-                      'id':m['id'],
-                      'value':m['value'],
-                      'avg':m['avg'],
-                      'unit':m['unit'],
-                      'peak':m['peak'],
-                      'pop':None,
-                      'tips':None,
-                      'max':m['max'],
-                      'min':m['min']}
+                      'values':m['values']
+                      }
 
     # Write to file
     write_metrics(dict, 23, 'Test Panel', OUTPUT_FILE)
 
 if __name__ == "__main__":
-    #main()
     main_interactive()
