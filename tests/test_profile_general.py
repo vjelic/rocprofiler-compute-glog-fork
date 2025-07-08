@@ -722,15 +722,20 @@ def test_roof_file_validation(binary_handler_profile_rocprof_compute):
 @pytest.mark.misc
 def test_roofline_kernel_names_validation_error(binary_handler_profile_rocprof_compute):
     """
-    Test validate_parameters() error: --roof-only is required for --kernel-names
-    This should trigger console_error("--roof-only is required for --kernel-names")
+    Test validate_parameters() error: --kernel-names cannot be used with --no-roof option
+    This should trigger console_error("--kernel-names cannot be used with --no-roof option")
     """
     if soc in ("MI100"):
         # roofline is not supported on MI100
         pytest.skip("Skipping roofline test for MI100")
         return
 
-    options = ["--device", "0", "--kernel-names"]  # missing --roof-only
+    options = [
+        "--device",
+        "0",
+        "--kernel-names",
+        "--no-roof",
+    ]  # using --no-roof explicitly
     workload_dir = test_utils.get_output_dir()
 
     returncode = binary_handler_profile_rocprof_compute(
@@ -1606,11 +1611,6 @@ def test_block_SPI(binary_handler_profile_rocprof_compute):
         "pmc_perf_0.csv",
         "pmc_perf_1.csv",
         "pmc_perf_2.csv",
-        "pmc_perf_3.csv",
-        "pmc_perf_4.csv",
-        "pmc_perf_5.csv",
-        "pmc_perf_6.csv",
-        "pmc_perf_7.csv",
         "sysinfo.csv",
         "timestamps.csv",
     ]
@@ -1621,11 +1621,6 @@ def test_block_SPI(binary_handler_profile_rocprof_compute):
             "pmc_perf_0.csv",
             "pmc_perf_1.csv",
             "pmc_perf_2.csv",
-            "pmc_perf_3.csv",
-            "pmc_perf_4.csv",
-            "pmc_perf_5.csv",
-            "pmc_perf_6.csv",
-            "pmc_perf_7.csv",
             "sysinfo.csv",
         ]
 
