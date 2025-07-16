@@ -197,7 +197,7 @@ an Instinct MI210 vs an Instinct MI250.
    ``sysinfo.csv``, is created to reflect the target device settings. All
    profiling output is stored in ``log.txt``. Roofline-specific benchmark
    results are stored in ``roofline.csv`` and roofline plots are outputted into PDFs as
-   ``empirRoof_gpu-0_[datatype1]_..._[datatypeN].pdf`` where datatypes requested through
+   ``empirRoof_gpu-0_[datatype1]_..._[datatypeN].pdf`` where data types requested through
    ``--roofline-data-type`` option are listed in the file name.
 
 .. code-block:: shell-session
@@ -405,7 +405,7 @@ Roofline options
 
 .. note::
 
-  For more information on datatypes supported based on the GPU architecture, see :doc:`../../conceptual/performance-model`
+  For more information on data types supported based on the GPU architecture, see :doc:`../../conceptual/performance-model`
 
 To distinguish different kernels in your ``.pdf`` roofline plot use
 ``--kernel-names``. This will give each kernel a unique marker identifiable from
