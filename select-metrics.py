@@ -96,7 +96,7 @@ def write_metrics(metrics, id, title, file_path):
             print('        metric:', file=f)
             for m in buckets[k]:
                 print(f"          {m['name']}:", file=f)
-                for h in k:
+                for h in header:
                     if h == 'metric':
                         continue
                     print(f"            {h}: {m['values'][h]}", file=f)
