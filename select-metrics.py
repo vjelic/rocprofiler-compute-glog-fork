@@ -254,7 +254,7 @@ def get_available_metrics():
 
     return available_metrics
 
-
+# Returns a list of tuples of different metric combinations
 def get_combos(metrics_list, must_have, subset_size):
 
     m_copy = metrics_list.copy()
@@ -331,6 +331,7 @@ def print_counter_usage(metrics):
 
     print(''.join(f'{b}: {block_counts[b]}/{IP_BLOCKS[b]}  ' for b in IP_BLOCKS))
 
+# Returns an array of metric ID strings
 def select_metrics(metrics):
 
     selected_ids = set()
@@ -356,6 +357,42 @@ def select_metrics(metrics):
 
     return [metrics[i]['id'] for i in selected_ids]
 
+# def main_interactive():
+#     metrics = get_available_metrics()
+
+#     selected = select_metrics(metrics)
+
+#     print('Selected {}'.format(selected))
+
+#     combos = get_combos(metrics, selected, SUBSET_SIZE)
+
+#     print('Found {} combinations'.format(len(combos)))
+
+#     if len(combos) == 0:
+#         print('No configurations found')
+#         exit(0)
+
+#     # Select random subset
+#     selected = list(combos[random.randint(0, len(combos))])
+
+#     print('Random selection:')
+#     for m in selected:
+#         print(f"{m['id']} {m['name']}")
+ 
+#     dict = {}
+#     for m in selected:
+#         name = m['name']
+#         dict[name] = {'name':name,
+#                       'id':m['id'],
+#                       'counters':m['counters'],
+#                       'title':m['title'],
+#                       'header':m['header'],
+#                       'values':m['values']
+#                       }
+
+#     # Write to file
+#     write_metrics(dict, 23, 'Test Panel', OUTPUT_FILE)
+
 def main_interactive():
     metrics = get_available_metrics()
 
@@ -363,16 +400,13 @@ def main_interactive():
 
     print('Selected {}'.format(selected))
 
-    combos = get_combos(metrics, selected, SUBSET_SIZE)
-
-    print('Found {} combinations'.format(len(combos)))
-
-    if len(combos) == 0:
-        print('No configurations found')
-        exit(0)
-
-    # Select random subset
-    selected = list(combos[random.randint(0, len(combos))])
+    metric_objs = []
+    for id in selected:
+        for m in metrics:
+            if m['id'] == id:
+                metric_objs.append(m)
+    
+    selected = metric_objs
 
     print('Random selection:')
     for m in selected:
