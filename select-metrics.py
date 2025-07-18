@@ -118,6 +118,9 @@ def get_block_counts(counters):
         for b in IP_BLOCKS:
             if ctr.startswith(b):
                 block_counts[b] += 1
+            elif ctr.startswith("SQC"):
+                # SQC and SQ belong to same IP block
+                block_counts["SQ"] += 1
 
     return block_counts
 
@@ -412,6 +415,14 @@ def main_interactive():
     for m in selected:
         print(f"{m['id']} {m['name']}")
  
+    counters = []
+    for m in selected:
+        counters.extend(m['counters'])
+    
+    counters = list(set(counters))
+    print('Counters:')
+    print(counters)
+
     dict = {}
     for m in selected:
         name = m['name']
