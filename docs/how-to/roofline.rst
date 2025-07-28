@@ -157,4 +157,32 @@ plot.
 Analysis Options
 -----------------------
 
-[WIP]
+**Analyze Mode Roofline Options:**
+
+``-b <block_id>, --block <block_id>``
+   Allows you to select metric id(s) from --list-metrics for filtering analysis outputs. Roofline metric ID is 4. Other information relevant to roofline can be found in metric ID 2, Speed-of-Light.
+
+``-R <datatype>``, ``--roofline-data-type <datatype>``
+   Allows you to specify data types that you want in the roofline plots(s). Selecting more than one data type will overlay the results onto the same plot. At this time we separate Op vs FLOP data types into separate graphs, as we only support FLOP intensities. (Default: FP32)
+
+   .. note::
+
+  For more information on data types supported based on the GPU architecture, see :doc:`../../conceptual/performance-model`
+
+
+Sample code for displaying Roofline plot through block filtering:
+
+.. code-block:: shell-session
+
+   $ rocprof-compute analyze -p workloads/vcopy/MI200/ -b 4
+
+.. image:: ../data/analyze/cli/roofline_chart.png
+   :align: left
+   :alt: Roofline
+
+.. note::
+   * Visualized memory chart and Roofline chart are only supported in single run analysis. In multiple runs comparison mode, both are switched back to basic table view.
+   * Visualized memory chart requires the width of the terminal output to be greater than or equal to 234 to display the whole chart properly.
+   * Visualized Roofline chart is adapted to the initial terminal size only. If it is not clear, you may need to adjust the terminal size and regenerate it to check the display effect.
+
+All CLI, TUI, and GUI modes in analysis stage can use the same roofline analyze options. CLI and TUI display roofline plot using plotext, and GUI uses plotly (same method as our roofline PDF plot outputs).
