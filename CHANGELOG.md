@@ -69,6 +69,8 @@ Full documentation for ROCm Compute Profiler is available at [https://rocm.docs.
 * Show description of metrics during analysis
   * Use `--include-cols Description` to show `Description` column which is excluded by default from cli output
 
+* Dedicated Roofline documentation page that includes conceptual information and usage of each mode, with examples.
+
 ### Changed
 
 * Change the default rocprof version to rocprofv3, this is used when environment variable "ROCPROF" is not set
