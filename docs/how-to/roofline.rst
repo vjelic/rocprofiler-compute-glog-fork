@@ -6,11 +6,12 @@
 Using Roofline Analysis in ROCm Compute Profiler
 ********************************************
 
-* :ref:`Conceptual <Conceptual>`
-* :ref:`Benchmarking <Benchmarking>`
-* :ref:`Profiling Options <Profiling options>`
-* :ref:`Analysis Options <Analysis options>`
+* :ref:`Conceptual <roofline-Conceptual>`
+* :ref:`Benchmarking <roofline-Benchmarking>`
+* :ref:`Profiling Options <roofline-Profiling-options>`
+* :ref:`Analysis Options <roofline-Analysis-options>`
 
+.. _roofline-Conceptual:
 ---------------------
 Conceptual
 ---------------------
@@ -49,26 +50,29 @@ Interpreting a basic roofline plot involves a few key items:
 
 Referencing the graph above, the glowing lines represent the theoretical peaks, or the most optimal performance of the hardware and software in the most ideal conditions.
 The diagonal lines represents the theoretical maximum memory throughput:
-* `LDS <https://rocm.docs.amd.com/projects/rocprofiler-compute/en/latest/conceptual/local-data-share.html>``: local data share, or shared memory, is fast on-CU scratchpad that can be managed by SW to effectively share data and coordinate between wavefronts in a workgroup.
-* `L1 cache <https://rocm.docs.amd.com/projects/rocprofiler-compute/en/latest/conceptual/vector-l1-cache.html>``: the vL1d, or vector L1 data cache, is local to each CU on an accelerator and handles vector memory operations issued by a wavefront.
-* `L2 cache <https://rocm.docs.amd.com/projects/rocprofiler-compute/en/latest/conceptual/l2-cache.html>``: shared by all CUs on the accelerator, handles requests from
+* :doc:`LDS </conceptual/local-data-share.html>``: local data share, or shared memory, is fast on-CU scratchpad that can be managed by SW to effectively share data and coordinate between wavefronts in a workgroup.
+* :doc:`L1 cache </conceptual/vector-l1-cache.html>``: the vL1d, or vector L1 data cache, is local to each CU on an accelerator and handles vector memory operations issued by a wavefront.
+* :doc:`L2 cache </conceptual/l2-cache.html>``: shared by all CUs on the accelerator, handles requests from
 all L1 caches and the command processor.
 * HBM: an accelerator’s local high-bandwidth memory.
 The horizontal lines is the theoretical maximum compute performance:
-* `Peak VALU <https://rocm.docs.amd.com/projects/rocprofiler-compute/en/latest/conceptual/pipeline-descriptions.html#vector-arithmetic-logic-unit-valu>``: the vector arithmetic logic unit (VALU) executes vector instructions over an entire wavefront, each work-item (or, vector-lane) potentially operating on distinct data.
-* `Peak MFMA <https://rocm.docs.amd.com/projects/rocprofiler-compute/en/latest/conceptual/pipeline-descriptions.html#matrix-fused-multiply-add-mfma>``: matrix fused multiply add instructions where entries of the input and output matrices are distributed over the lanes of the wavefront’s vector registers.
+* :ref:`Peak VALU <desc-valu>``: the vector arithmetic logic unit (VALU) executes vector instructions over an entire wavefront, each work-item (or, vector-lane) potentially operating on distinct data.
+* :ref:`Peak MFMA <desc-mfma>`: matrix fused multiply add instructions where entries of the input and output matrices are distributed over the lanes of the wavefront’s vector registers.
 
 Let’s start with the red kernel point- it is a memory-intensive workload, and because it sits just under peak memory bandwidth line, we are restricted in performance by how fast we can move data. Seeing a kernel point here would first suggest to us that we are bottlenecked by a specific memory stage and might want to reevaluate memory access implementation. Another obervation would be that we should optimize our code to do more operations on loaded data before needing more- this is the arithmetic intensity measurement- how much work we can do on the same data. Some examples of this would be to change precision (for example single precision over double precision for space and speed), use the vector units more efficiently, multithreading, use optimized kernels or other rocm software. Applications that are throughput bound by GEMM computation can achieve additional speedups by utilizing Matrix Cores. Generalized Matrix Multiplication (GEMM) computations are hardware-accelerated through Matrix Core Processing Units to achieve speedup, compared to SIMD vector units.
-See `AMD Matrix Cores <https://gpuopen.com/learn/amd-lab-notes/amd-lab-notes-matrix-cores-readme/>` for more information.
+See :amd-lab-note:`AMD matrix cores <amd-lab-notes-matrix-cores-readme>`
+ for more information.
 
+.. _roofline-Benchmarking:
 ---------------------
 Benchmarking
 ---------------------
-Roofline binaries are generated from the `rocm-amdgpu-bench <https://github.com/ROCm/rocm-amdgpu-bench>` repository. Instructions for building can be found in the README; however, at this time the rocprofiler-compute repository contains the pre-built roofline binaries located in the `//rocprofiler-compute/src/utils/rooflines <https://github.com/ROCm/rocprofiler-compute/tree/amd-mainline/src/utils/rooflines>` directory.
+Roofline binaries are generated from the `rocm-amdgpu-bench <https://github.com/ROCm/rocm-amdgpu-bench>`_ repository. Instructions for building can be found in the README; however, at this time the rocprofiler-compute repository contains the pre-built roofline binaries located in the `//rocprofiler-compute/src/utils/rooflines <https://github.com/ROCm/rocprofiler-compute/tree/amd-mainline/src/utils/rooflines>`_ directory.
 
 .. note::
     rocm-amdgpu-bench binaries must be built against the same ROCm version that is being used to run rocprofiler-compute.
 
+.. _roofline-Profiling-options:
 ---------------------
 Profiling Options
 ---------------------
@@ -90,6 +94,10 @@ In profiling mode, we collect the roofline-related performance counters for a us
 
 ``-R <datatype>``, ``--roofline-data-type <datatype>``
    Allows you to specify data types that you want plotted in the roofline PDF output(s). Selecting more than one data type will overlay the results onto the same plot. At this time we separate Op vs FLOP data types into separate graphs, as we only support FLOP intensities. (Default: FP32)
+
+   .. note::
+
+  For more information on data types supported based on the GPU architecture, see :doc:`../../conceptual/performance-model`
 
 ``--roof-only``
    Only do roofline profiling; collect only the counters relevant to roofline.
@@ -144,6 +152,7 @@ plot.
    :alt: Sample ROCm Compute Profiler roofline output
    :width: 800
 
+.. _roofline-Analysis-options:
 -----------------------
 Analysis Options
 -----------------------
